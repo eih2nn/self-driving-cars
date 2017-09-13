@@ -9,7 +9,7 @@
 # @param class: Corresponding class of training predictors
 knn.R <- function(train, test, class, k = 1){
   train.full <- cbind(train, class)
-  preds <- unname(unlist(apply(test, 1, knn.classify, train = train.full, k = 1)))
+  preds <- unname(unlist(apply(test, 1, knn.classify, train = train.full, k = k)))
   return(preds)
 }
 
