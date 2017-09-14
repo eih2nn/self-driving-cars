@@ -26,4 +26,51 @@ knn.classify <- function(test.case, train, k){
   return(unique_classes[which.max(tabulate(match(train$cl, unique_classes)))])
 }
 
+knn.loocv <- function(train, class, k = 1){
+  accuracy <- vector(mode="numeric", length = nrow(train))
+  train <- cbind(train, class)
+  for(i in 1:nrow(train)){
+    train.data <- train[-i, -ncol(train)]
+    train.class <- train[-i, ncol(train)]
+    test.data <- train[i, -ncol(train)]
+    true.class <- train[i, ncol(train)]
+    pred <- knn.R(train = train.data, test = test.data, class = train.class, k = k)
+    accuracy[i] <- pred == true.class
+  }
+  
+  return(mean(accuracy))
+}
+
+partition_size <- function(size, folds){
+  mod <- size %% folds  
+  ret <- rep(floor(size / folds), folds - mod)
+  ret <- c(ret, rep(ceiling(size/folds), mod))
+  return(ret)
+}
+
+knn.kfolds <- function(train, class, k = 1, folds = 5){
+  partition_sizes <- partition_size(nrow(train), folds)
+  kfolds <- list()
+  indices <- 1:nrow(train)
+  bounds <- 1:folds
+  for(i in bounds){
+    kfolds[[i]] <- sample(indices, size = partition_sizes[i])
+    indices <- setdiff(indices, kfolds[i])
+  }
+  
+  train <-cbind(train, class)
+  accuracy <- vector(mode="numeric", length = folds)
+  for(i in bounds){
+    test_indices <- unlist(kfolds[i])
+    
+    train.data <- train[-test_indices, -ncol(train)]
+    train.class <- train[-test_indices, ncol(train)]
+    test.data <- train[test_indices, -ncol(train)]
+    true.class <- train[test_indices, ncol(train)]
+    pred <- knn.R(train = train.data, test = test.data, class = train.class, k = k)
+    accuracy[i] <- mean(sum(pred == true.class)/length(pred))
+  }
+  
+  return(mean(accuracy))
+}
 
