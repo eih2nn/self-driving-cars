@@ -19,13 +19,23 @@ knn.R <- function(train, test, class, k = 1){
 knn.classify <- function(test.case, train, k){
   cl <- train[, ncol(train)]
   train <- train[, -ncol(train)]
-  train["dist"] <- apply(train, 1, function(x){sqrt(sum((x - test.case)^2))})
-  train <- cbind(train, cl)
+  res <- apply(train, 1, distance_cosine, test.case =  test.case)
+  train <- cbind(train, "dist" = res)
+  train <- as.data.frame(cbind(train, cl))
   train <- head(train[order(train$dist), ], n = k)
   unique_classes <- unique(train$cl)
   return(unique_classes[which.max(tabulate(match(train$cl, unique_classes)))])
 }
 
+distance <- function(x, test.case){
+  ret <- sqrt(sum((x - test.case)^2))
+  return(ret)
+}
+
+distance_cosine <- function(x, test.case){
+  ret <- sum(x * test.case)/(sqrt(sum(x^2))*sqrt(sum(test.case^2)))
+  return(ret)
+}
 knn.loocv <- function(train, class, k = 1){
   accuracy <- vector(mode="numeric", length = nrow(train))
   train <- cbind(train, class)
