@@ -5,7 +5,6 @@
 
 #Install (if necessary) and load the core tidyverse packages: ggplot2, tibble, tidyr, readr, purrr, and dplyr
 library(tidyverse) 
-library(XML)
 library(tm)
 
 #Read in files:
@@ -91,6 +90,10 @@ lm.df.99.3 <- lm(SCORE~cant+dont+excit+googl+insur+less+need+safer+
                  data=df.99.scored)
 summary(lm.df.99.3)
 
+plot(lm.df.99.3) #Plot it!
+abline #Add a linear model line
+
+
 ## LM PREDICTIONS... ###
 
 mypreds <- data.frame(predict(lm.df.99.3, newdata = df.test.preds))
@@ -104,6 +107,7 @@ lm.preds <- lm.preds[c(2,1)] #Switch columns
 
 write.table(lm.preds, file = "lm_car_tweets_eih.csv", row.names=F, sep=",") #Write out to a csv
 #KAGGLE SCORE = 0.68302
+
 
 ### KNN APPROACH (NOT FROM SCRATCH) ###
 
