@@ -1,6 +1,6 @@
 #TEAM COMPETITION 3-1
 #Elizabeth Homan
-#Brian Greenawald
+#Ben Greenawald
 #Leelakrishna (Sai) Bollempalli
 
 #Install (if necessary) and load the core tidyverse packages: ggplot2, tibble, tidyr, readr, purrr, and dplyr
