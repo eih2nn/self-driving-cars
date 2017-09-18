@@ -1,4 +1,7 @@
-#Preparing data using Professor Gerber's method
+#TEAM COMPETITION 3-1
+#Elizabeth Homan
+#Brian Greenawald
+#Leelakrishna (Sai) Bollempalli
 
 #Install (if necessary) and load the core tidyverse packages: ggplot2, tibble, tidyr, readr, purrr, and dplyr
 library(tidyverse) 
@@ -47,24 +50,6 @@ dtm.tfidf.99 = as.matrix(tfidf.99)
 df.99.scored <- data.frame(dtm.tfidf.99)
 df.99.scored["SCORE"] <- train[,1]
 
-colnames.99 <- as.list(colnames(df.99.scored))
-colnames.99
-
-lm.df.99 <- lm(SCORE~., 
-data=df.99.scored)
-
-summary(lm.df.99)
-
-lm.df.99.2 <- lm(SCORE~cant+dont+excit+googl+insur+less+need+pedal+safer+save+saw+
-                   soon+thing+wait+want+warn+wrong, #Select anything with significance
-               data=df.99.scored)
-summary(lm.df.99.2)
-
-lm.df.99.3 <- lm(SCORE~cant+dont+excit+googl+insur+less+need+safer+
-                   soon+thing+wait+want+warn+wrong, #Select anything with significance
-                 data=df.99.scored)
-summary(lm.df.99.3)
-
 ###### PREPARE TESTING SET ###### 
 
 #Get the content:
@@ -89,6 +74,25 @@ test.clean.tfidf = DocumentTermMatrix(test.clean, control = list(weighting = wei
 test.clean.tfidf = as.matrix(test.clean.tfidf)
 df.test.preds <- data.frame(test.clean.tfidf)
 
+### CREATE BASIC LINEAR MODEL WITH CLEANED 99% TRAINING SET ###
+
+lm.df.99 <- lm(SCORE~., 
+               data=df.99.scored)
+
+summary(lm.df.99)
+
+lm.df.99.2 <- lm(SCORE~cant+dont+excit+googl+insur+less+need+pedal+safer+save+saw+
+                   soon+thing+wait+want+warn+wrong, #Select anything with significance
+                 data=df.99.scored)
+summary(lm.df.99.2)
+
+lm.df.99.3 <- lm(SCORE~cant+dont+excit+googl+insur+less+need+safer+
+                   soon+thing+wait+want+warn+wrong, #Select anything with significance
+                 data=df.99.scored)
+summary(lm.df.99.3)
+
+## LM PREDICTIONS... ###
+
 mypreds <- data.frame(predict(lm.df.99.3, newdata = df.test.preds))
 sentiment <- round(mypreds[,1],digits=0)
 lm.preds <- as.data.frame(sentiment)
@@ -99,3 +103,5 @@ lm.preds["id"] = test[,1]
 lm.preds <- lm.preds[c(2,1)] #Switch columns
 
 write.table(lm.preds, file = "lm_car_tweets_eih.csv", row.names=F, sep=",") #Write out to a csv
+
+
