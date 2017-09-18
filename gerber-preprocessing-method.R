@@ -103,6 +103,7 @@ lm.preds["id"] = test[,1]
 lm.preds <- lm.preds[c(2,1)] #Switch columns
 
 write.table(lm.preds, file = "lm_car_tweets_eih.csv", row.names=F, sep=",") #Write out to a csv
+#KAGGLE SCORE = 0.68302
 
 ### KNN APPROACH (NOT FROM SCRATCH) ###
 
