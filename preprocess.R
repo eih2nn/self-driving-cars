@@ -5,20 +5,16 @@ library(readr)
 library(stringr)
 library(tm)
 
-clean_data <- function(train, sparcity, stop_words = T, extra = T){
+clean_data <- function(train, sparcity = 0.99, filter_symbol = T, stop_words = T, extra = T){
   train2 <- train
-  train2$text <- remove_at(train2$text)
-  train2$text <- remove_symbols(train2)
+  if(filter_symbol){
+    train2$text <- remove_at(train2$text)
+    train2$text <- remove_symbols(train2)
+  }
+  
   ##### Constructing TF-IDF Matrices #####
   tweets <- Corpus(VectorSource(train2$text))
-  
-  # regular indexing returns a sub-corpus
-  inspect(tweets[1:2])
-  
-  # double indexing accesses actual documents
-  tweets[[1]]
-  tweets[[1]]$content
-  
+
   ##### Reducing Term Sparsity #####
   
   # there's a lot in the documents that we don't care about. clean up the corpus.
@@ -26,27 +22,20 @@ clean_data <- function(train, sparcity, stop_words = T, extra = T){
   tweets.clean = tm_map(tweets.clean, removeNumbers)                      # remove numbers
   tweets.clean = tm_map(tweets.clean, removePunctuation)                  # remove punctuation
   tweets.clean = tm_map(tweets.clean, content_transformer(tolower))       # ignore case
-  # tweets.clean = tm_map(tweets.clean, removeWords, stopwords("english"))  # remove stop words
+  if(stop_words){
+    tweets.clean = tm_map(tweets.clean, removeWords, stopwords("english"))  # remove stop words
+  }
   tweets.clean = tm_map(tweets.clean, stemDocument)                       # stem all words
-  
-  # compare original content of document 1 with cleaned content
-  tweets[[1]]$content
-  tweets.clean[[1]]$content  # do we care about misspellings resulting from stemming?
-  
-  ret.tweets <- as.data.frame(tweets.clean$content)
   
   # recompute TF-IDF matrix
   tweets.clean.tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = weightTfIdf))
   
-  # reinspect the first 5 documents and first 5 terms
-  tweets.clean.tfidf[1:5,1:5]
-  as.matrix(tweets.clean.tfidf[1:5,1:5])
-  
+
   # we've still got a very sparse document-term matrix. remove sparse terms at various thresholds.
-  tfidf = removeSparseTerms(tweets.clean.tfidf, 0.975) 
+  tfidf = removeSparseTerms(tweets.clean.tfidf, sparcity) 
   tfidf
   
-  dtm.tfidf = as.matrix(tfidf)
+  dtm.tfidf = as.data.frame(as.matrix(tfidf))
   
   if(extra){
     extra_features <- feature_extract(train)

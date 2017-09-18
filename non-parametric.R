@@ -1,53 +1,64 @@
-# Apply the non-parametric KNN approach
-
+library(tm)
+library(readr)
 source("knn.R")
 source("preprocess.R")
-library(tidytext)
-library(dplyr)
-library(ggplot2)
-library(tm)
+library(MASS) # Used for lda
+library(class)
 
+##### Read in the data
 train <- read_csv("train.csv")
 
-train_mod <- feature_extract(train)
-ks <- seq(1, sqrt(nrow(train_mod)), by = 4)
-reses <- vector(mode = "numeric", length = length(ks))
-for(i in 1:length(ks)){
-  reses[i] <- knn.loocv(train_mod[, -c(1, 2)], train_mod[, 1], k = ks[i])
+# Run the KNN
+
+# Find ideal K with baseline values
+preds <- clean_data(train, 0.99, F, T, F)
+k <- seq(1, 2 * as.integer(sqrt(nrow(preds))), by = 2)
+reses <- vector(mode = "numeric", length = length(k))
+for(i in 1:length(k)){
+  p <- knn.cv(preds, as.factor(train$sentiment), k = k[i])
+  reses[i] <- sum(p == train$sentiment)/length(train$sentiment)
 }
+reses 
 
-fold <- 5
-ks <- seq(1, sqrt(nrow(train_mod) - nrow(train_mod)/fold), by = 4)
-reses.kfold <- vector(mode = "numeric", length = length(ks))
+# Gives a best k of 19, 21, 23
 
-for(i in 1:length(ks)){
- reses.kfold[i] <- knn.kfolds(train_mod[, -c(1, 2)], train_mod[, 1], k = ks[i]) 
+# Optimize the sparcity using optimal k
+sparc <- c(0.95, 0.96, 0.975, 0.985, 0.99)
+reses <- vector(mode = "numeric", length = length(sparc))
+for(i in 1:length(sparc)){
+  preds <- clean_data(train, sparc[i], F, T, F)
+  p <- knn.cv(preds, as.factor(train$sentiment), k = 19)
+  reses[i] <- sum(p == train$sentiment)/length(train$sentiment)
 }
+reses
+# Gives optimal sparcity of 0.975
 
-sample <- sample(1:nrow(train_mod), size = 0.8 * nrow(train_mod))
+# See if filtering symbols helps
+preds <- clean_data(train, 0.975, F, T, F)
+p <- knn.cv(preds, as.factor(train$sentiment), k = 19)
+sum(p == train$sentiment)/length(train$sentiment)
 
-train.data <- train_mod[sample, -c(1,2)]
-train.cl <- train_mod[sample, 1]
-test.data <- train_mod[-sample, -c(1, 2)]
-true.cl <- train_mod[-sample, 1]
+preds <- clean_data(train, 0.975, T, T, F)
+p <- knn.cv(preds, as.factor(train$sentiment), k = 19)
+sum(p == train$sentiment)/length(train$sentiment)
+# Keeping symbols seems to help
 
-preds <- knn.R(train.data, test.data, train.cl, k = 3)
-sum(preds == true.cl)/nrow(true.cl)
+# See if keeping stopwords helps
+preds <- clean_data(train, 0.975, F, F, F)
+p <- knn.cv(preds, as.factor(train$sentiment), k = 19)
+sum(p == train$sentiment)/length(train$sentiment)
 
-# Play with the tidytext package
-tweet_words <-  train %>% 
-  unnest_tokens(word, text) %>%
-  count(sentiment, word, sort = TRUE) %>%
-  ungroup()
+preds <- clean_data(train, 0.975, F, T, F)
+p <- knn.cv(preds, as.factor(train$sentiment), k = 19)
+sum(p == train$sentiment)/length(train$sentiment)
+# Removing stopwords helps
 
-total_words <- tweet_words %>% 
-  group_by(sentiment) %>% 
-  summarize(total = sum(n))
+# See if adding additional features helps
+preds <- clean_data(train, 0.975, F, T, F)
+p <- knn.cv(preds, as.factor(train$sentiment), k = 19)
+sum(p == train$sentiment)/length(train$sentiment)
 
-tweet_words <- left_join(tweet_words, total_words)
-
-tweet_words <- tweet_words %>%
-  bind_tf_idf(word, sentiment, n)
-
-# Play with the tm package
-c <- Corpus(VectorSource(train_mod$text))
+preds <- clean_data(train, 0.975, F, T, T)
+p <- knn.cv(preds, as.factor(train$sentiment), k = 19)
+sum(p == train$sentiment)/length(train$sentiment)
+# Adding features does not help
