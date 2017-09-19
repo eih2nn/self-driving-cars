@@ -21,7 +21,8 @@ tweets = VCorpus(DataframeSource(train[,2]))
 tweets.tfidf = DocumentTermMatrix(tweets, control = list(weighting = weightTfIdf))
 tweets.tfidf  # non-/sparse entries indicates how many of the DTM cells are non-zero and zero, respectively.
 
-#Reducing Term Sparsity...
+##### Reducing Term Sparsity #####
+
 #Clean up the corpus.
 tweets.clean = tm_map(tweets, stripWhitespace)                          # remove extra whitespace
 tweets.clean = tm_map(tweets.clean, removeNumbers)                      # remove numbers
@@ -50,18 +51,50 @@ dtm.tfidf.99 = as.matrix(tfidf.99)
 df.99.scored <- data.frame(dtm.tfidf.99)
 df.99.scored["SCORE"] <- train[,1]
 
+colnames.99 <- as.list(colnames(df.99.scored))
+colnames.99
+
+lm.df.99 <- lm(SCORE~., 
+data=df.99.scored)
+
+summary(lm.df.99)
+
+lm.df.99.2 <- lm(SCORE~cant+dont+excit+googl+insur+less+need+pedal+safer+save+saw+
+                   soon+thing+wait+want+warn+wrong, #Select anything with significance
+               data=df.99.scored)
+summary(lm.df.99.2)
+
+lm.df.99.3 <- lm(SCORE~cant+dont+excit+googl+insur+less+need+safer+
+                   soon+thing+wait+want+warn+wrong, #Select anything with significance
+                 data=df.99.scored)
+summary(lm.df.99.3)
+
+# Use step function to find optimal set of predictors
+# step(lm.df.99, direction = "both")
+
+lm.optimal <- lm(formula = SCORE ~ accid + cant + car + come + cool + dont + 
+                   excit + fbi + googl + hit + insur + just + less + need + 
+                   pedal + safer + save + saw + soon + taxi + thing + think + 
+                   truck + wait + want + warn + wheel + will + wrong + yes, 
+                 data = df.99.scored)
+
+summary(lm.optimal)
+
 ###### PREPARE TESTING SET ###### 
 
+test2 <- rbind(test, c(1000, paste(colnames(df.99.scored), collapse = " ")))
+
 #Get the content:
-test = VCorpus(DataframeSource(test[,2]))
+test2 = VCorpus(DataframeSource(test2[,2]))
 
 #Compute TF-IDF matrix and inspect sparsity
-test.tfidf = DocumentTermMatrix(test, control = list(weighting = weightTfIdf))
+test.tfidf = DocumentTermMatrix(test2, control = list(weighting = weightTfIdf))
 test.tfidf  # non-/sparse entries indicates how many of the DTM cells are non-zero and zero, respectively.
 
-#Reducing Term Sparsity...
+##### Reducing Term Sparsity #####
+
 #Clean up the corpus.
-test.clean = tm_map(test, stripWhitespace)                          # remove extra whitespace
+test.clean = tm_map(test2, stripWhitespace)                          # remove extra whitespace
 test.clean = tm_map(test.clean, removeNumbers)                      # remove numbers
 test.clean = tm_map(test.clean, removePunctuation)                  # remove punctuation
 test.clean = tm_map(test.clean, content_transformer(tolower))       # ignore case
@@ -69,10 +102,16 @@ test.clean = tm_map(test.clean, removeWords, stopwords("english"))  # remove sto
 test.clean = tm_map(test.clean, stemDocument)                       # stem all words
 
 #Recompute TF-IDF matrix and convert to dataframe
+
+# Make sure
 test.clean.tfidf = DocumentTermMatrix(test.clean, control = list(weighting = weightTfIdf))
 test.clean.tfidf = as.matrix(test.clean.tfidf)
 df.test.preds <- data.frame(test.clean.tfidf)
+df.test.preds <- df.test.preds[-nrow(df.test.preds),]
 
+<<<<<<< HEAD
+mypreds <- data.frame(predict(lm.optimal, newdata = df.test.preds))
+=======
 ### CREATE BASIC LINEAR MODEL WITH CLEANED 99% TRAINING SET ###
 
 ################### LOOCV (leave one out cross validation)
@@ -102,9 +141,13 @@ abline #Add a linear model line
 ## LM PREDICTIONS... ###
 
 mypreds <- data.frame(predict(lm.df.99.3, newdata = df.test.preds))
+>>>>>>> e12b0f4de1aefbc0c3ede2b42f4fd50605bd6705
 sentiment <- round(mypreds[,1],digits=0)
 lm.preds <- as.data.frame(sentiment)
-lm.preds[51,] = 5 #Change single 6 value to a 5
+
+# Change <1 to 1 and >5 to 5 
+lm.preds[lm.preds > 5,] = 5
+lm.preds[lm.preds < 1,] = 1
 
 test <- read_csv("test.csv") #Read in the csv data file for testing the model
 lm.preds["id"] = test[,1]

@@ -4,8 +4,10 @@ library(dplyr)
 library(readr)
 library(stringr)
 library(tm)
+library(zoo) # Used for the coredata function
 
-clean_data <- function(train, sparcity = 0.99, filter_symbol = T, stop_words = T, extra = T){
+# Clean the data based on the Professor Gerbers preprocessing script
+clean_data <- function(train, sparcity = 0.99, filter_symbol = T, stop_words = T, extra = T, dict = NULL, weighting = "ntn"){
   train2 <- train
   if(filter_symbol){
     train2$text <- remove_at(train2$text)
@@ -28,12 +30,17 @@ clean_data <- function(train, sparcity = 0.99, filter_symbol = T, stop_words = T
   tweets.clean = tm_map(tweets.clean, stemDocument)                       # stem all words
   
   # recompute TF-IDF matrix
-  tweets.clean.tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = weightTfIdf))
+  if(is.null(dict)){
+    tweets.clean.tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = function(x){weightSMART(x, spec = weighting)}))
+    tfidf = removeSparseTerms(tweets.clean.tfidf, sparcity) 
+  }else{
+    tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = function(x){weightSMART(x, spec = weighting)}, 
+                                                                         dictionary = dict))
+    tfidf = tfidf[-nrow(tfidf), ]
+  }
   
 
-  # we've still got a very sparse document-term matrix. remove sparse terms at various thresholds.
-  tfidf = removeSparseTerms(tweets.clean.tfidf, sparcity) 
-  tfidf
+  # we've still got a very sparse document-term matrix. remove sparse terms at various thresholds
   
   dtm.tfidf = as.data.frame(as.matrix(tfidf))
   
@@ -50,12 +57,9 @@ clean_data <- function(train, sparcity = 0.99, filter_symbol = T, stop_words = T
   
 }
 
-# Read in the train data
-
+# Extract additional, potentially useful, features from the data
 feature_extract <- function(train){
   train_mod <- mutate(odd_char = str_count(text, "[Ì¢???âÂåüèÏ???Û¡ÂsteÃ]"), train)
-  # train_mod <- mutate(str_len = str_length(text), train_mod)
-  # train_mod["num_words"] <- unlist(lapply(train_mod$text, num_words))
   train_mod["num_hash"] <- unlist(lapply(train_mod$text, num_hashtag))
   train_mod["num_at"] <- unlist(lapply(train_mod$text, num_at))
   train_mod <- mutate("num_exlaim" = str_count(text, "!"), train_mod)
@@ -68,27 +72,49 @@ feature_extract <- function(train){
   train_mod$num_exlaim <- train_mod$num_exlaim/max(train_mod$num_exlaim)
   train_mod$num_question <- train_mod$num_question/max(train_mod$num_question)
   
+  train_mod$text <- NULL
+  train_mod$sentiment <- NULL
+  train_mod$id <- NULL
   return(train_mod)
 }
 
+# Removes any word starting with the '@' symbol
 remove_at <- function(x){
     x <- lapply(x, function(y){gsub("@\\w+ *", "", y)})
 }
 
+# Remove certain oddly encoded symbols
 remove_symbols <- function(x){
   return(str_replace_all(x$text, "[Ì¢???âÂåüèÏ???Û¡ÂÃ???Ò]", ""))
 }
 
+# Return the number of words in a string
 num_words <- function(x){
   return(length(unlist(str_split(x, " "))))
 }
 
+# Returns the numbers of hasttag uses in a string
 num_hashtag <- function(x){
   res <- unlist(str_split(x, " "))
   return(sum(grepl("@", res)))
 }
 
+# Return the number of '@' symbols used
 num_at <- function(x){
   res <- unlist(str_split(x, " "))
   return(sum(grepl("#", res)))
+}
+
+# Expand the data to normalize the classes
+expand_data <- function(x, distribution){
+  for(i in 1:5){
+    temp <- x[x$sentiment == i, ]
+    expand <- do.call(rbind, replicate(distribution[i], coredata(temp), simplify = FALSE))
+    if(i == 1){
+      result <- expand
+    }else{
+      result <- rbind(result, expand)
+    }
+  }
+  return(result)
 }
