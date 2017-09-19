@@ -3,7 +3,7 @@
 #Ben Greenawald
 #Leelakrishna (Sai) Bollempalli
 
-#Install (if necessary) and load the core tidyverse packages: ggplot2, tibble, tidyr, readr, purrr, and dplyr
+#Load the core tidyverse packages (ggplot2, tibble, tidyr, readr, purrr, and dplyr), as well as tm
 library(tidyverse) 
 library(tm)
 
@@ -14,7 +14,7 @@ sample <- read_csv("sample.csv") #Read in the csv data file for sample submissio
 
 ### PREPARE/CLEAN TRAINING SET ###
 
-#Get the content:
+#Get the content
 tweets = VCorpus(DataframeSource(train[,2]))
 
 #Compute TF-IDF matrix and inspect sparsity
@@ -23,17 +23,13 @@ tweets.tfidf  # non-/sparse entries indicates how many of the DTM cells are non-
 
 ##### Reducing Term Sparsity #####
 
-#Clean up the corpus.
+#Clean up the corpus
 tweets.clean = tm_map(tweets, stripWhitespace)                          # remove extra whitespace
 tweets.clean = tm_map(tweets.clean, removeNumbers)                      # remove numbers
 tweets.clean = tm_map(tweets.clean, removePunctuation)                  # remove punctuation
 tweets.clean = tm_map(tweets.clean, content_transformer(tolower))       # ignore case
 tweets.clean = tm_map(tweets.clean, removeWords, stopwords("english"))  # remove stop words
 tweets.clean = tm_map(tweets.clean, stemDocument)                       # stem all words
-
-#Compare original content of document 1 with cleaned content
-tweets[[1]]$content
-tweets.clean[[1]]$content  # do we care about misspellings resulting from stemming?
 
 #Recompute TF-IDF matrix
 tweets.clean.tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = weightTfIdf))
@@ -51,8 +47,7 @@ dtm.tfidf.99 = as.matrix(tfidf.99)
 df.99.scored <- data.frame(dtm.tfidf.99)
 df.99.scored["SCORE"] <- train[,1]
 
-colnames.99 <- as.list(colnames(df.99.scored))
-colnames.99
+### CREATE BASIC LINEAR MODEL WITH CLEANED 99% TRAINING SET ###
 
 lm.df.99 <- lm(SCORE~., 
 data=df.99.scored)
@@ -66,7 +61,7 @@ summary(lm.df.99.2)
 
 lm.df.99.3 <- lm(SCORE~cant+dont+excit+googl+insur+less+need+safer+
                    soon+thing+wait+want+warn+wrong, #Select anything with significance
-                 data=df.99.scored)
+                 data=df.99.scored)   #Remove words not in test set, when errors result
 summary(lm.df.99.3)
 
 # Use step function to find optimal set of predictors
@@ -93,7 +88,7 @@ test.tfidf  # non-/sparse entries indicates how many of the DTM cells are non-ze
 
 ##### Reducing Term Sparsity #####
 
-#Clean up the corpus.
+#Clean up the corpus
 test.clean = tm_map(test2, stripWhitespace)                          # remove extra whitespace
 test.clean = tm_map(test.clean, removeNumbers)                      # remove numbers
 test.clean = tm_map(test.clean, removePunctuation)                  # remove punctuation
@@ -102,36 +97,14 @@ test.clean = tm_map(test.clean, removeWords, stopwords("english"))  # remove sto
 test.clean = tm_map(test.clean, stemDocument)                       # stem all words
 
 #Recompute TF-IDF matrix and convert to dataframe
-
-# Make sure
 test.clean.tfidf = DocumentTermMatrix(test.clean, control = list(weighting = weightTfIdf))
 test.clean.tfidf = as.matrix(test.clean.tfidf)
 df.test.preds <- data.frame(test.clean.tfidf)
 df.test.preds <- df.test.preds[-nrow(df.test.preds),]
 
 
-mypreds <- data.frame(predict(lm.optimal, newdata = df.test.preds))
 
-### CREATE BASIC LINEAR MODEL WITH CLEANED 99% TRAINING SET ###
-
-lm.df.99 <- lm(SCORE~., 
-               data=df.99.scored)
-
-summary(lm.df.99)
-
-lm.df.99.2 <- lm(SCORE~cant+dont+excit+googl+insur+less+need+pedal+safer+save+saw+
-                   soon+thing+wait+want+warn+wrong, #Select anything with significance
-                 data=df.99.scored)
-summary(lm.df.99.2)
-
-lm.df.99.3 <- lm(SCORE~cant+dont+excit+googl+insur+less+need+safer+
-                   soon+thing+wait+want+warn+wrong, #Select anything with significance
-                 data=df.99.scored)
-summary(lm.df.99.3)
-
-plot(lm.df.99.3) #Plot it!
-abline #Add a linear model line
-
+mypreds.optimal <- data.frame(predict(lm.optimal, newdata = df.test.preds))
 
 ## LM PREDICTIONS... ###
 
@@ -152,67 +125,4 @@ write.table(lm.preds, file = "lm_car_tweets_eih.csv", row.names=F, sep=",") #Wri
 #KAGGLE SCORE = 0.68302
 
 
-### KNN APPROACH (NOT FROM SCRATCH) ###
-
-library(class)  
-library(caret)
-
-#Train a model using knn, with 20 runs of different K values
-knn.fit <- train(SCORE~., data = df.99.scored, method = "knn",
-                 preProcess = c("center", "scale"),
-                 tuneLength = 15)
-knn.fit
-
-#k-Nearest Neighbors 
-#981 samples
-#126 predictors
-#Pre-processing: centered (126), scaled (126) 
-#Resampling: Bootstrapped (25 reps) 
-#Summary of sample sizes: 981, 981, 981, 981, 981, 981, ... 
-#Resampling results across tuning parameters:
-  
-#  k   RMSE       Rsquared  
-#5  0.8663321  0.01356836
-#7  0.8354020  0.01216891
-#9  0.8126616  0.01471686
-#11  0.7980212  0.01811100
-#13  0.7842202  0.02449978
-#15  0.7771873  0.02669756
-#17  0.7729275  0.02767401
-#19  0.7687481  0.03047114
-#21  0.7678358  0.02969977
-#23  0.7668293  0.02969825
-#25  0.7917816  0.02870664
-#27  0.7903342  0.03115282
-#29  0.7906914  0.03014757
-#31  0.7911242  0.02967747
-#33  0.7915552  0.02883294
-
-#RMSE was used to select the optimal model using  the smallest value.
-#The final value used for the model was k = 27.
-
-#Use KNN model for test data and put predictions into a new dataframe
-knn.preds <- predict(knn.fit, newdata = df.test.preds)
-#ERROR - multiple objects not found
-
-#Drop necessary columns from training dataframe and rerun knn.fit()
-drops <- c("fbi","januari","univers")
-df.99.drops <- df.99.scored[ , !(names(df.99.scored) %in% drops)]
-
-knn.fit <- train(SCORE~., data = df.99.drops, method = "knn",
-                 preProcess = c("center", "scale"),
-                 tuneLength = 15)
-knn.fit
-#...RMSE was used to select the optimal model using  the smallest value.
-#The final value used for the model was k = 27.
-
-mypreds <- data.frame(predict(knn.fit, newdata = df.test.preds))
-sentiment <- round(mypreds[,1],digits=0)
-knn.preds <- as.data.frame(sentiment)
-knn.preds["id"] <- test[,1] #Add ID values
-knn.preds <- knn.preds[c(2,1)] #Switch column order
-
-write.table(knn.preds, file = "knn_car_tweets_eih.csv", row.names=F, sep=",") #Write out to a csv
-#OF NOTE: THIS DATAFRAME IS ALMOST ENTIRELY SENTIMENT = 3; IT IS NOT GOING TO BE A GOOD
-#OPTION FOR SUBMISSION
 
