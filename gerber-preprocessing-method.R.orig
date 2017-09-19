@@ -21,8 +21,7 @@ tweets = VCorpus(DataframeSource(train[,2]))
 tweets.tfidf = DocumentTermMatrix(tweets, control = list(weighting = weightTfIdf))
 tweets.tfidf  # non-/sparse entries indicates how many of the DTM cells are non-zero and zero, respectively.
 
-##### Reducing Term Sparsity #####
-
+#Reducing Term Sparsity...
 #Clean up the corpus.
 tweets.clean = tm_map(tweets, stripWhitespace)                          # remove extra whitespace
 tweets.clean = tm_map(tweets.clean, removeNumbers)                      # remove numbers
@@ -51,6 +50,7 @@ dtm.tfidf.99 = as.matrix(tfidf.99)
 df.99.scored <- data.frame(dtm.tfidf.99)
 df.99.scored["SCORE"] <- train[,1]
 
+<<<<<<< HEAD
 colnames.99 <- as.list(colnames(df.99.scored))
 colnames.99
 
@@ -80,6 +80,8 @@ lm.optimal <- lm(formula = SCORE ~ accid + cant + car + come + cool + dont +
 
 summary(lm.optimal)
 
+=======
+>>>>>>> e12b0f4de1aefbc0c3ede2b42f4fd50605bd6705
 ###### PREPARE TESTING SET ###### 
 
 test2 <- rbind(test, c(1000, paste(colnames(df.99.scored), collapse = " ")))
@@ -91,8 +93,7 @@ test2 = VCorpus(DataframeSource(test2[,2]))
 test.tfidf = DocumentTermMatrix(test2, control = list(weighting = weightTfIdf))
 test.tfidf  # non-/sparse entries indicates how many of the DTM cells are non-zero and zero, respectively.
 
-##### Reducing Term Sparsity #####
-
+#Reducing Term Sparsity...
 #Clean up the corpus.
 test.clean = tm_map(test2, stripWhitespace)                          # remove extra whitespace
 test.clean = tm_map(test.clean, removeNumbers)                      # remove numbers
@@ -148,6 +149,9 @@ test <- read_csv("test.csv") #Read in the csv data file for testing the model
 lm.preds["id"] = test[,1]
 lm.preds <- lm.preds[c(2,1)] #Switch columns
 
+<<<<<<< HEAD
+write.table(lm.preds, file = "lm_car_tweets_bhg.csv", row.names=F, sep=",") #Write out to a csv
+=======
 write.table(lm.preds, file = "lm_car_tweets_eih.csv", row.names=F, sep=",") #Write out to a csv
 #KAGGLE SCORE = 0.68302
 
@@ -216,3 +220,4 @@ write.table(knn.preds, file = "knn_car_tweets_eih.csv", row.names=F, sep=",") #W
 #OF NOTE: THIS DATAFRAME IS ALMOST ENTIRELY SENTIMENT = 3; IT IS NOT GOING TO BE A GOOD
 #OPTION FOR SUBMISSION
 
+>>>>>>> e12b0f4de1aefbc0c3ede2b42f4fd50605bd6705
