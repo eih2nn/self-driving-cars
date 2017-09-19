@@ -3,9 +3,11 @@
 #Ben Greenawald
 #Leelakrishna (Sai) Bollempalli
 
-#Load the core tidyverse packages (ggplot2, tibble, tidyr, readr, purrr, and dplyr), as well as tm
+#Load the core tidyverse packages (ggplot2, tibble, tidyr, readr, purrr, and dplyr), 
+#as well as tm and MASS
 library(tidyverse) 
 library(tm)
+library(MASS)
 
 #Read in files:
 train <- read_csv("train.csv") #Read in the comma separated value data file for training the model
@@ -105,7 +107,27 @@ summary(lm.df.99.3) #All variables still have p-value >= 0.05
 #F-statistic: 11.17 on 14 and 966 DF,  p-value: < 2.2e-16
 
 
-### CREATE LINEAR MODEL USING STEP FUNCTION ###
+### BASIC LM PREDICTION... ###
+
+#Use predict function to predict sentiment on test set using final basic linear model
+mypreds <- data.frame(predict(lm.df.99.3, newdata = df.test.preds))
+
+sentiment <- round(mypreds[,1],digits=0) #Round all values to closest integer
+lm.preds <- as.data.frame(sentiment) #Place into a data frame
+
+# Change <1 to 1 and >5 to 5 
+lm.preds[lm.preds > 5,] = 5
+lm.preds[lm.preds < 1,] = 1
+
+#Add in ID numbers
+lm.preds["id"] = test[,1]
+lm.preds <- lm.preds[c(2,1)] #Switch columns, so they are in the correct order
+
+write.table(lm.preds, file = "lm_car_tweets_eih.csv", row.names=F, sep=",") #Write out to a csv
+#KAGGLE SCORE = 0.68302
+
+
+### CREATE OPTIMAL LINEAR MODEL USING STEP FUNCTION ###
 
 #Use step function to find optimal set of predictors
 
@@ -157,26 +179,6 @@ summary(lm.optimal)
 #F-statistic: 6.946 on 30 and 950 DF,  p-value: < 2.2e-16
 
 
-### BASIC LM PREDICTION... ###
-
-#Use predict function to predict sentiment on test set using final basic linear model
-mypreds <- data.frame(predict(lm.df.99.3, newdata = df.test.preds))
-
-sentiment <- round(mypreds[,1],digits=0) #Round all values to closest integer
-lm.preds <- as.data.frame(sentiment) #Place into a data frame
-
-# Change <1 to 1 and >5 to 5 
-lm.preds[lm.preds > 5,] = 5
-lm.preds[lm.preds < 1,] = 1
-
-#Add in ID numbers
-lm.preds["id"] = test[,1]
-lm.preds <- lm.preds[c(2,1)] #Switch columns, so they are in the correct order
-
-write.table(lm.preds, file = "lm_car_tweets_eih.csv", row.names=F, sep=",") #Write out to a csv
-#KAGGLE SCORE = 0.68302
-
-
 ### OPTIMAL LM PREDICTION... ###
 
 #Use predict function to make predictions on test set sentiment using optimal linear model
@@ -193,6 +195,23 @@ lm.preds.optimal[lm.preds.optimal < 1,] = 1
 lm.preds.optimal["id"] = test[,1]
 lm.preds.optimal <- lm.preds.optimal[c(2,1)] #Switch columns, so they are in the correct order
 
-write.table(lm.preds, file = "lm_optimal_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
+write.table(lm.preds.optimal, file = "lm_optimal_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
 #KAGGLE SCORE = ???
 
+
+### USE LDA TO CREATE A NEW LINEAR MODEL ###
+
+df.99.scored.2 <- df.99.scored[, !(colnames(df.99.scored) %in% c("univers"))]
+z <- lda(SCORE ~ ., df.99.scored.2, prior = c(0.02344546,0.1192661,0.6146789,0.1824669,0.06014271))
+
+
+### LDA PREDICTION ... ###
+
+lm.preds.LDA["sentiment"] <- (predict(z, newdata=df.test.preds)$class)
+
+#Add in ID numbers
+lm.preds.LDA["id"] = test[,1]
+lm.preds.LDA <- lm.preds.LDA[c(2,1)] #Switch columns, so they are in the correct order
+
+write.table(lm.preds.LDA, file = "lm_optimal_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
+#KAGGLE SCORE = ???
