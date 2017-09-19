@@ -1,2 +1,4 @@
 ben-test.R
 *.csv
+.RData
+.Rhistory
