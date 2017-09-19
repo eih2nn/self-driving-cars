@@ -6,8 +6,18 @@ library(stringr)
 library(tm)
 library(zoo) # Used for the coredata function
 library(tau) # Used to tokenize into n-grams
+library(RWeka)
 
 # Clean the data based on the Professor Gerbers preprocessing script
+# @param train: unprocessed data directly from csv file
+# @param sparcity: sparcity threshold for the weighted matrix
+# @param filter_symbol: boolean specifying whether to remove '@' symbols and
+#   other oddly encoded symbols
+# @param stop_words: boolean specifying whether to remove stop words or not
+# @param extra: boolean specifying whether to extract additional features from 
+#   the data
+# @param dict: list representing all words in the train weighted matrix
+# @param weighting: string representing weighting to be used for the SMART function
 clean_data <- function(train, sparcity = 0.99, filter_symbol = T, stop_words = T, extra = T, dict = NULL, weighting = "ntn"){
   train2 <- train
   if(filter_symbol){
@@ -16,7 +26,7 @@ clean_data <- function(train, sparcity = 0.99, filter_symbol = T, stop_words = T
   }
   
   ##### Constructing TF-IDF Matrices #####
-  tweets <- Corpus(VectorSource(train2$text))
+  tweets <- VCorpus(VectorSource(train2$text))
 
   ##### Reducing Term Sparsity #####
   
@@ -30,19 +40,21 @@ clean_data <- function(train, sparcity = 0.99, filter_symbol = T, stop_words = T
   }
   tweets.clean = tm_map(tweets.clean, stemDocument)                       # stem all words
   
+  # Tokenizer for bigrams
+  BigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 1, max = 2))
+  
   # recompute TF-IDF matrix
   if(is.null(dict)){
-    tweets.clean.tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = function(x){weightSMART(x, spec = "nnn")},
-                                                                         tokenize = tokenize_ngrams))
-    tfidf = removeSparseTerms(tweets.clean.tfidf, 0.99) 
+    tweets.clean.tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = function(x){weightSMART(x, spec = weighting)},
+                                                                         tokenize = BigramTokenizer))
+    tfidf = removeSparseTerms(tweets.clean.tfidf, sparcity) 
   }else{
     tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = function(x){weightSMART(x, spec = weighting)}, 
                                                                          dictionary = dict,
-                                                                         tokenize = tokenize_ngrams))
+                                                                         tokenize = BigramTokenizer))
     tfidf = tfidf[-nrow(tfidf), ]
   }
   
-
   # we've still got a very sparse document-term matrix. remove sparse terms at various thresholds
   
   dtm.tfidf = as.data.frame(as.matrix(tfidf))
@@ -123,8 +135,4 @@ expand_data <- function(x, distribution){
 }
 
 # Token data into n-gram tokens, comes from https://stackoverflow.com/questions/8898521/finding-2-3-word-phrases-using-r-tm-package
-tokenize_ngrams <- function(x, n=2) return(rownames(as.data.frame(unclass(textcnt(x,method="string",n=n)))))
-
-train %>% 
-  group_by(sentiment) %>% 
-  summarize(n = n())
+tokenize_ngrams <- function(x, n=1) return(rownames(as.data.frame(unclass(textcnt(x,method="string",n=n)))))

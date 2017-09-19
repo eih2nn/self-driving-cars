@@ -73,8 +73,8 @@ sum(p == train$sentiment)/length(train$sentiment)
 
 # Play around with different weighting schemes
 train2 <- expand_data(train, c(1, 1, 1, 1, 1))
-preds <- clean_data(train2, 0.99, F, T, T, weighting = "ltc")
-p <- class::knn.cv(preds, as.factor(train2$sentiment), k = 9)
+preds <- clean_data(train2, 0.995, F, T, F, weighting = "ntn")
+p <- class::knn.cv(preds, as.factor(train2$sentiment), k = 19)
 sum(p == train2$sentiment)/length(train2$sentiment)
 
 # Train on new data
