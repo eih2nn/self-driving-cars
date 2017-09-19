@@ -65,19 +65,32 @@ lm.df.99.3 <- lm(SCORE~cant+dont+excit+googl+insur+less+need+safer+
                  data=df.99.scored)
 summary(lm.df.99.3)
 
+# Use step function to find optimal set of predictors
+# step(lm.df.99, direction = "both")
+
+lm.optimal <- lm(formula = SCORE ~ accid + cant + car + come + cool + dont + 
+                   excit + fbi + googl + hit + insur + just + less + need + 
+                   pedal + safer + save + saw + soon + taxi + thing + think + 
+                   truck + wait + want + warn + wheel + will + wrong + yes, 
+                 data = df.99.scored)
+
+summary(lm.optimal)
+
 ###### PREPARE TESTING SET ###### 
 
+test2 <- rbind(test, c(1000, paste(colnames(df.99.scored), collapse = " ")))
+
 #Get the content:
-test = VCorpus(DataframeSource(test[,2]))
+test2 = VCorpus(DataframeSource(test2[,2]))
 
 #Compute TF-IDF matrix and inspect sparsity
-test.tfidf = DocumentTermMatrix(test, control = list(weighting = weightTfIdf))
+test.tfidf = DocumentTermMatrix(test2, control = list(weighting = weightTfIdf))
 test.tfidf  # non-/sparse entries indicates how many of the DTM cells are non-zero and zero, respectively.
 
 ##### Reducing Term Sparsity #####
 
 #Clean up the corpus.
-test.clean = tm_map(test, stripWhitespace)                          # remove extra whitespace
+test.clean = tm_map(test2, stripWhitespace)                          # remove extra whitespace
 test.clean = tm_map(test.clean, removeNumbers)                      # remove numbers
 test.clean = tm_map(test.clean, removePunctuation)                  # remove punctuation
 test.clean = tm_map(test.clean, content_transformer(tolower))       # ignore case
@@ -85,17 +98,23 @@ test.clean = tm_map(test.clean, removeWords, stopwords("english"))  # remove sto
 test.clean = tm_map(test.clean, stemDocument)                       # stem all words
 
 #Recompute TF-IDF matrix and convert to dataframe
+
+# Make sure
 test.clean.tfidf = DocumentTermMatrix(test.clean, control = list(weighting = weightTfIdf))
 test.clean.tfidf = as.matrix(test.clean.tfidf)
 df.test.preds <- data.frame(test.clean.tfidf)
+df.test.preds <- df.test.preds[-nrow(df.test.preds),]
 
-mypreds <- data.frame(predict(lm.df.99.3, newdata = df.test.preds))
+mypreds <- data.frame(predict(lm.optimal, newdata = df.test.preds))
 sentiment <- round(mypreds[,1],digits=0)
 lm.preds <- as.data.frame(sentiment)
-lm.preds[51,] = 5 #Change single 6 value to a 5
+
+# Change <1 to 1 and >5 to 5 
+lm.preds[lm.preds > 5,] = 5
+lm.preds[lm.preds < 1,] = 1
 
 test <- read_csv("test.csv") #Read in the csv data file for testing the model
 lm.preds["id"] = test[,1]
 lm.preds <- lm.preds[c(2,1)] #Switch columns
 
-write.table(lm.preds, file = "lm_car_tweets_eih.csv", row.names=F, sep=",") #Write out to a csv
+write.table(lm.preds, file = "lm_car_tweets_bhg.csv", row.names=F, sep=",") #Write out to a csv
