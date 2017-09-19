@@ -114,6 +114,11 @@ mypreds <- data.frame(predict(lm.optimal, newdata = df.test.preds))
 =======
 ### CREATE BASIC LINEAR MODEL WITH CLEANED 99% TRAINING SET ###
 
+################### LOOCV (leave one out cross validation)
+#install.packages("boot")
+#require(boot)
+# cv.glm(data, glmfit, cost, K)
+
 lm.df.99 <- lm(SCORE~., 
                data=df.99.scored)
 
@@ -148,7 +153,7 @@ test <- read_csv("test.csv") #Read in the csv data file for testing the model
 lm.preds["id"] = test[,1]
 lm.preds <- lm.preds[c(2,1)] #Switch columns
 
-write.table(lm.preds, file = "lm_car_tweets_eih.csv", row.names=F, sep=",") #Write out to a csv
+#write.table(lm.preds, file = "lm_car_tweets_eih.csv", row.names=F, sep=",") #Write out to a csv
 #KAGGLE SCORE = 0.68302
 
 
@@ -212,7 +217,7 @@ knn.preds <- as.data.frame(sentiment)
 knn.preds["id"] <- test[,1] #Add ID values
 knn.preds <- knn.preds[c(2,1)] #Switch column order
 
-write.table(knn.preds, file = "knn_car_tweets_eih.csv", row.names=F, sep=",") #Write out to a csv
+#write.table(knn.preds, file = "knn_car_tweets_eih.csv", row.names=F, sep=",") #Write out to a csv
 #OF NOTE: THIS DATAFRAME IS ALMOST ENTIRELY SENTIMENT = 3; IT IS NOT GOING TO BE A GOOD
 #OPTION FOR SUBMISSION
 
