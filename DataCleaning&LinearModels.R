@@ -8,6 +8,7 @@
 library(tidyverse) 
 library(tm)
 library(MASS)
+source("preprocess.R")
 
 #Read in files:
 train <- read_csv("train.csv") #Read in the comma separated value data file for training the model
@@ -16,69 +17,15 @@ sample <- read_csv("sample.csv") #Read in the csv data file for sample submissio
 
 
 ### PREPARE/CLEAN TRAINING SET ###
-
-#Get the content
-tweets = VCorpus(DataframeSource(train[,2]))
-
-#Compute TF-IDF matrix and inspect sparsity
-tweets.tfidf = DocumentTermMatrix(tweets, control = list(weighting = weightTfIdf))
-tweets.tfidf  # non-/sparse entries indicates how many of the DTM cells are non-zero and zero, respectively.
-
-##### Reducing Term Sparsity #####
-
-#Clean up the corpus
-tweets.clean = tm_map(tweets, stripWhitespace)                          # remove extra whitespace
-tweets.clean = tm_map(tweets.clean, removeNumbers)                      # remove numbers
-tweets.clean = tm_map(tweets.clean, removePunctuation)                  # remove punctuation
-tweets.clean = tm_map(tweets.clean, content_transformer(tolower))       # ignore case
-tweets.clean = tm_map(tweets.clean, removeWords, stopwords("english"))  # remove stop words
-tweets.clean = tm_map(tweets.clean, stemDocument)                       # stem all words
-
-#Recompute TF-IDF matrix
-tweets.clean.tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = weightTfIdf))
-
-#Inspect the first 5 documents and first 5 terms
-tweets.clean.tfidf[1:5,1:5]
-as.matrix(tweets.clean.tfidf[1:5,1:5])
-
-#Remove terms that are absent from at least 99% of documents (keep most terms)
-tfidf.99 = removeSparseTerms(tweets.clean.tfidf, 0.99)  
-tfidf.99
-as.matrix(tfidf.99[1:5,1:5])
-dtm.tfidf.99 = as.matrix(tfidf.99)
-
-df.99.scored <- data.frame(dtm.tfidf.99)
+df.99.scored <- clean_data(train, 0.99, filter_symbol = F, stop_words = F, 
+                            extra = F, weighting = "ntn", ngram = F)
+corpus <- colnames(df.99.scored)
 df.99.scored["SCORE"] <- train[,1]
 
 
 ###### PREPARE TESTING SET ###### 
-
-#Create a new test data frame with all colnames from training set so as to include variables 
-#that might be used to create our models, but are not in the original test set
-test2 <- rbind(test, c(1000, paste(colnames(df.99.scored), collapse = " ")))
-
-#Get the content:
-test2 = VCorpus(DataframeSource(test2[,2]))
-
-#Compute TF-IDF matrix and inspect sparsity
-test.tfidf = DocumentTermMatrix(test2, control = list(weighting = weightTfIdf))
-test.tfidf  # non-/sparse entries indicates how many of the DTM cells are non-zero and zero, respectively.
-
-##### Reducing Term Sparsity #####
-
-#Clean up the corpus
-test.clean = tm_map(test2, stripWhitespace)                          # remove extra whitespace
-test.clean = tm_map(test.clean, removeNumbers)                      # remove numbers
-test.clean = tm_map(test.clean, removePunctuation)                  # remove punctuation
-test.clean = tm_map(test.clean, content_transformer(tolower))       # ignore case
-test.clean = tm_map(test.clean, removeWords, stopwords("english"))  # remove stop words
-test.clean = tm_map(test.clean, stemDocument)                       # stem all words
-
-#Recompute TF-IDF matrix and convert to dataframe
-test.clean.tfidf = DocumentTermMatrix(test.clean, control = list(weighting = weightTfIdf))
-test.clean.tfidf = as.matrix(test.clean.tfidf)
-df.test.preds <- data.frame(test.clean.tfidf)
-df.test.preds <- df.test.preds[-nrow(df.test.preds),]
+df.test.preds <- clean_data(test, 0.99, filter_symbol = F, stop_words = F, 
+                            extra = F, dict = corpus, weighting = "ntn")
 
 
 ### CREATE BASIC LINEAR MODEL WITH CLEANED 99% TRAINING SET ###
@@ -131,7 +78,7 @@ write.table(lm.preds, file = "lm_car_tweets_eih.csv", row.names=F, sep=",") #Wri
 
 #Use step function to find optimal set of predictors
 
-#step(lm.df.99, direction = "both") #THIS TAKES A WHILE TO RUN... RESULTS ARE SHOWN BELOW
+# step(lm.df.99, direction = "both") #THIS TAKES A WHILE TO RUN... RESULTS ARE SHOWN BELOW
 
 lm.optimal <- lm(formula = SCORE ~ accid + cant + car + come + cool + dont + 
                    excit + fbi + googl + hit + insur + just + less + need + 
@@ -196,22 +143,15 @@ lm.preds.optimal["id"] = test[,1]
 lm.preds.optimal <- lm.preds.optimal[c(2,1)] #Switch columns, so they are in the correct order
 
 write.table(lm.preds.optimal, file = "lm_optimal_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
-#KAGGLE SCORE = ???
+#KAGGLE SCORE = 0.66
 
 
 ### USE LDA TO CREATE A NEW LINEAR MODEL ###
-
-df.99.scored.2 <- df.99.scored[, !(colnames(df.99.scored) %in% c("univers"))]
-z <- lda(SCORE ~ ., df.99.scored.2, prior = c(0.02344546,0.1192661,0.6146789,0.1824669,0.06014271), CV = T)
+z <- lda(SCORE ~ ., df.99.scored, prior = c(0.02344546,0.1192661,0.6146789,0.1824669,0.06014271))
 sum(z$class == train$sentiment)/length(z$class)
 
 ### LDA PREDICTION ... ###
-
-lm.preds.LDA["sentiment"] <- (predict(z, newdata=df.test.preds)$class)
-
-#Add in ID numbers
-lm.preds.LDA["id"] = test[,1]
+preds <- predict(z, newdata=df.test.preds)$class
+ids <- test[,1]
+lm.preds.LDA <- data.frame("sentiment" = preds, "id" = ids)
 lm.preds.LDA <- lm.preds.LDA[c(2,1)] #Switch columns, so they are in the correct order
-
-write.table(lm.preds.LDA, file = "lm_optimal_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
-#KAGGLE SCORE = ???

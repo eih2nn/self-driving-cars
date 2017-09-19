@@ -103,7 +103,6 @@ df.test.preds <- data.frame(test.clean.tfidf)
 df.test.preds <- df.test.preds[-nrow(df.test.preds),]
 
 
-
 mypreds.optimal <- data.frame(predict(lm.optimal, newdata = df.test.preds))
 
 ## LM PREDICTIONS... ###
