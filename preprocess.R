@@ -5,6 +5,7 @@ library(readr)
 library(stringr)
 library(tm)
 library(zoo) # Used for the coredata function
+library(tau) # Used to tokenize into n-grams
 
 # Clean the data based on the Professor Gerbers preprocessing script
 clean_data <- function(train, sparcity = 0.99, filter_symbol = T, stop_words = T, extra = T, dict = NULL, weighting = "ntn"){
@@ -31,11 +32,13 @@ clean_data <- function(train, sparcity = 0.99, filter_symbol = T, stop_words = T
   
   # recompute TF-IDF matrix
   if(is.null(dict)){
-    tweets.clean.tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = function(x){weightSMART(x, spec = weighting)}))
-    tfidf = removeSparseTerms(tweets.clean.tfidf, sparcity) 
+    tweets.clean.tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = function(x){weightSMART(x, spec = "nnn")},
+                                                                         tokenize = tokenize_ngrams))
+    tfidf = removeSparseTerms(tweets.clean.tfidf, 0.99) 
   }else{
     tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = function(x){weightSMART(x, spec = weighting)}, 
-                                                                         dictionary = dict))
+                                                                         dictionary = dict,
+                                                                         tokenize = tokenize_ngrams))
     tfidf = tfidf[-nrow(tfidf), ]
   }
   
@@ -118,3 +121,10 @@ expand_data <- function(x, distribution){
   }
   return(result)
 }
+
+# Token data into n-gram tokens, comes from https://stackoverflow.com/questions/8898521/finding-2-3-word-phrases-using-r-tm-package
+tokenize_ngrams <- function(x, n=2) return(rownames(as.data.frame(unclass(textcnt(x,method="string",n=n)))))
+
+train %>% 
+  group_by(sentiment) %>% 
+  summarize(n = n())

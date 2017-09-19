@@ -5,6 +5,7 @@ source("preprocess.R")
 library(MASS) # Used for lda
 library(class)
 library(dplyr)
+library(tau)
 
 ##### Read in the data
 train <- read_csv("train.csv")
@@ -71,9 +72,10 @@ sum(p == train$sentiment)/length(train$sentiment)
 # Adding features does not help
 
 # Play around with different weighting schemes
-preds <- clean_data(train, 0.975, F, F, F, weighting = "lnn")
-p <- knn.cv(preds, as.factor(train$sentiment), k = 9)
-sum(p == train$sentiment)/length(train$sentiment)
+train2 <- expand_data(train, c(1, 1, 1, 1, 1))
+preds <- clean_data(train2, 0.99, F, T, T, weighting = "ltc")
+p <- class::knn.cv(preds, as.factor(train2$sentiment), k = 9)
+sum(p == train2$sentiment)/length(train2$sentiment)
 
 # Train on new data
 
