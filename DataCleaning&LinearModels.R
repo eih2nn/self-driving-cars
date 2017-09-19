@@ -204,7 +204,7 @@ write.table(lm.preds.optimal, file = "lm_optimal_car_tweets.csv", row.names=F, s
 df.99.scored.2 <- df.99.scored[, !(colnames(df.99.scored) %in% c("univers"))]
 z <- lda(SCORE ~ ., df.99.scored.2, CV = T)
 sum(z$class == train$sentiment)/length(z$class)
-z$class
+
 ### LDA PREDICTION ... ###
 
 lm.preds.LDA["sentiment"] <- (predict(z, newdata=df.test.preds)$class)

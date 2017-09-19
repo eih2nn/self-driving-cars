@@ -18,7 +18,9 @@ library(RWeka)
 #   the data
 # @param dict: list representing all words in the train weighted matrix
 # @param weighting: string representing weighting to be used for the SMART function
-clean_data <- function(train, sparcity = 0.99, filter_symbol = T, stop_words = T, extra = T, dict = NULL, weighting = "ntn"){
+# @param ngram: boolean telling whether to use bigram analysis
+# @param n: Number of grams to use in ngram
+clean_data <- function(train, sparcity = 0.99, filter_symbol = T, stop_words = T, extra = T, dict = NULL, weighting = "ntn", ngram = F, n = 2){
   train2 <- train
   if(filter_symbol){
     train2$text <- remove_at(train2$text)
@@ -35,25 +37,37 @@ clean_data <- function(train, sparcity = 0.99, filter_symbol = T, stop_words = T
   tweets.clean = tm_map(tweets.clean, removeNumbers)                      # remove numbers
   tweets.clean = tm_map(tweets.clean, removePunctuation)                  # remove punctuation
   tweets.clean = tm_map(tweets.clean, content_transformer(tolower))       # ignore case
-  if(stop_words){
+  if(!stop_words){
     tweets.clean = tm_map(tweets.clean, removeWords, stopwords("english"))  # remove stop words
   }
   tweets.clean = tm_map(tweets.clean, stemDocument)                       # stem all words
   
-  # Tokenizer for bigrams
-  BigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 1, max = 2))
-  
-  # recompute TF-IDF matrix
-  if(is.null(dict)){
-    tweets.clean.tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = function(x){weightSMART(x, spec = weighting)},
-                                                                         tokenize = BigramTokenizer))
-    tfidf = removeSparseTerms(tweets.clean.tfidf, sparcity) 
+  if(ngram){
+    # Tokenizer for ngrams
+    BigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 1, max = n))
+    
+    # recompute TF-IDF matrix
+    if(is.null(dict)){
+      tweets.clean.tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = function(x){weightSMART(x, spec = weighting)},
+                                                                           tokenize = BigramTokenizer))
+      tfidf = removeSparseTerms(tweets.clean.tfidf, sparcity) 
+    }else{
+      tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = function(x){weightSMART(x, spec = weighting)}, 
+                                                              dictionary = dict,
+                                                              tokenize = BigramTokenizer))
+      tfidf = tfidf[-nrow(tfidf), ]
+    }
   }else{
-    tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = function(x){weightSMART(x, spec = weighting)}, 
-                                                                         dictionary = dict,
-                                                                         tokenize = BigramTokenizer))
-    tfidf = tfidf[-nrow(tfidf), ]
+    # recompute TF-IDF matrix
+    if(is.null(dict)){
+      tweets.clean.tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = function(x){weightSMART(x, spec = weighting)}))
+      tfidf = removeSparseTerms(tweets.clean.tfidf, sparcity) 
+    }else{
+      tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = function(x){weightSMART(x, spec = weighting)}, 
+                                                              dictionary = dict))
+    }
   }
+ 
   
   # we've still got a very sparse document-term matrix. remove sparse terms at various thresholds
   
