@@ -202,8 +202,8 @@ write.table(lm.preds.optimal, file = "lm_optimal_car_tweets.csv", row.names=F, s
 ### USE LDA TO CREATE A NEW LINEAR MODEL ###
 
 df.99.scored.2 <- df.99.scored[, !(colnames(df.99.scored) %in% c("univers"))]
-z <- lda(SCORE ~ ., df.99.scored.2, prior = c(0.02344546,0.1192661,0.6146789,0.1824669,0.06014271))
-
+z <- lda(SCORE ~ ., df.99.scored.2, prior = c(0.02344546,0.1192661,0.6146789,0.1824669,0.06014271), CV = T)
+sum(z$class == train$sentiment)/length(z$class)
 
 ### LDA PREDICTION ... ###
 
