@@ -4,10 +4,16 @@ source("knn.R")
 source("preprocess.R")
 library(MASS) # Used for lda
 library(class)
+library(dplyr)
 
 ##### Read in the data
 train <- read_csv("train.csv")
 test <- read_csv("test.csv")
+
+# Check on distribution on numbers
+train2 <- train %>% 
+  group_by(sentiment) %>% 
+  summarize(n = n())
 
 # Run the KNN
 
@@ -63,6 +69,11 @@ preds <- clean_data(train, 0.975, F, T, T)
 p <- knn.cv(preds, as.factor(train$sentiment), k = 19)
 sum(p == train$sentiment)/length(train$sentiment)
 # Adding features does not help
+
+# Play around with different weighting schemes
+preds <- clean_data(train, 0.975, F, F, F, weighting = "lnn")
+p <- knn.cv(preds, as.factor(train$sentiment), k = 9)
+sum(p == train$sentiment)/length(train$sentiment)
 
 # Train on new data
 
