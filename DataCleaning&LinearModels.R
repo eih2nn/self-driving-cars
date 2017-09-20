@@ -274,7 +274,7 @@ lm.df.99.34 <- lm(SCORE ~ arent  + awesom + best +
 summary(lm.df.99.34)
 
 #Use predict function to make predictions on test set sentiment using optimal linear model
-mypreds.bi <- data.frame(predict(lm.df.99.3, newdata = df.test.preds3))
+mypreds.bi <- data.frame(predict(lm.df.99.34, newdata = df.test.preds3))
 
 sentiment <- round(mypreds.bi[,1],digits=0) #Round all values to closest integer
 lm.preds.bi <- as.data.frame(sentiment) #Place into a data frame
@@ -285,7 +285,7 @@ lm.preds.bi[lm.preds.bi < 1,] = 1
 
 #Add in ID numbers
 lm.preds.bi["id"] = test[,1]
-lm.preds.bi <- lm.preds.extra[c(2,1)] #Switch columns, so they are in the correct order
+lm.preds.bi <- lm.preds.bi[c(2,1)] #Switch columns, so they are in the correct order
 
 write.table(lm.preds.extra, file = "lm_bi_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
 #KAGGLE SCORE = ???
