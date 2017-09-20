@@ -55,7 +55,6 @@ clean_data <- function(train, sparcity = 0.99, filter_symbol = T, stop_words = T
       tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = function(x){weightSMART(x, spec = weighting)}, 
                                                               dictionary = dict,
                                                               tokenize = BigramTokenizer))
-      tfidf = tfidf[-nrow(tfidf), ]
     }
   }else{
     # recompute TF-IDF matrix

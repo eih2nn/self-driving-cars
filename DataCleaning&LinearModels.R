@@ -19,7 +19,8 @@ sample <- read_csv("sample.csv") #Read in the csv data file for sample submissio
 ### PREPARE/CLEAN TRAINING SET ###
 df.99.scored <- clean_data(train, 0.99, filter_symbol = F, stop_words = F, 
                             extra = F, weighting = "ntn", ngram = F)
-corpus <- colnames(df.99.scored)
+corpus <- colnames(df.99.scored)[!(colnames(df.99.scored) %in% c("num_at", "num_exlaim",
+                                                               "num_hash", "num_question", "odd_char"))]
 df.99.scored["SCORE"] <- train[,1]
 
 
@@ -27,8 +28,9 @@ df.99.scored["SCORE"] <- train[,1]
 df.test.preds <- clean_data(test, 0.99, filter_symbol = F, stop_words = F, 
                             extra = F, dict = corpus, weighting = "ntn")
 
-
+###############################################################
 ### CREATE BASIC LINEAR MODEL WITH CLEANED 99% TRAINING SET ###
+###############################################################
 
 #Use all variables to create a linear model with the lm() function
 lm.df.99 <- lm(SCORE~.,  
@@ -53,7 +55,6 @@ summary(lm.df.99.3) #All variables still have p-value >= 0.05
 #Multiple R-squared:  0.1393,	Adjusted R-squared:  0.1268 
 #F-statistic: 11.17 on 14 and 966 DF,  p-value: < 2.2e-16
 
-
 ### BASIC LM PREDICTION... ###
 
 #Use predict function to predict sentiment on test set using final basic linear model
@@ -73,8 +74,9 @@ lm.preds <- lm.preds[c(2,1)] #Switch columns, so they are in the correct order
 write.table(lm.preds, file = "lm_car_tweets_eih.csv", row.names=F, sep=",") #Write out to a csv
 #KAGGLE SCORE = 0.68302
 
-
+#######################################################
 ### CREATE OPTIMAL LINEAR MODEL USING STEP FUNCTION ###
+#######################################################
 
 #Use step function to find optimal set of predictors
 
@@ -148,10 +150,137 @@ write.table(lm.preds.optimal, file = "lm_optimal_car_tweets.csv", row.names=F, s
 
 ### USE LDA TO CREATE A NEW LINEAR MODEL ###
 z <- lda(SCORE ~ ., df.99.scored, prior = c(0.02344546,0.1192661,0.6146789,0.1824669,0.06014271))
-sum(z$class == train$sentiment)/length(z$class)
 
 ### LDA PREDICTION ... ###
 preds <- predict(z, newdata=df.test.preds)$class
 ids <- test[,1]
 lm.preds.LDA <- data.frame("sentiment" = preds, "id" = ids)
 lm.preds.LDA <- lm.preds.LDA[c(2,1)] #Switch columns, so they are in the correct order
+
+##########################################################
+### CREATE BASIC LINEAR MODEL WITH ADDITIONAL FEATURES ###
+##########################################################
+
+### PREPARE/CLEAN TRAINING SET ###
+df.99.scored2 <- clean_data(train, 0.99, filter_symbol = F, stop_words = F, 
+                           extra = T, weighting = "ntn", ngram = F)
+corpus2 <- colnames(df.99.scored2)[!(colnames(df.99.scored2) %in% c("num_at", "num_exlaim",
+                                                                 "num_hash", "num_question", "odd_char"))]
+df.99.scored2["SCORE"] <- train[,1]
+
+
+###### PREPARE TESTING SET ###### 
+df.test.preds2 <- clean_data(test, 0.99, filter_symbol = F, stop_words = F, 
+                            extra = T, dict = corpus2, weighting = "ntn")
+
+
+### MAKE THE MODEL ###
+lm.df.99.2 <- lm(SCORE~., data=df.99.scored2)
+summary(lm.df.99.2) #Look to see what variables have a significance greater than or equal to 0.1
+
+### KEEP ONLY PREDICTIVE VARIABLES
+lm.df.99.22 <- lm(SCORE ~ dont + excit + fbi + googl + insur + just + 
+                    less + need + pedal + save + saw + thing + think +
+                    truck + wait + want + warn + will + odd_char + 
+                    num_exlaim + num_question, df.99.scored2)
+summary(lm.df.99.22)
+
+### REPEAT
+lm.df.99.23 <- lm(SCORE ~ dont + excit + fbi + googl + insur + just + 
+                    less + need + save + saw + thing + think +
+                    truck + wait + want + warn + will + 
+                    num_exlaim + num_question, df.99.scored2)
+summary(lm.df.99.23)
+
+#Use predict function to make predictions on test set sentiment using optimal linear model
+mypreds.extra <- data.frame(predict(lm.df.99.23, newdata = df.test.preds2))
+
+sentiment <- round(mypreds.extra[,1],digits=0) #Round all values to closest integer
+lm.preds.extra <- as.data.frame(sentiment) #Place into a data frame
+
+# Change <1 to 1 and >5 to 5 
+lm.preds.extra[lm.preds.extra > 5,] = 5
+lm.preds.extra[lm.preds.extra < 1,] = 1
+
+#Add in ID numbers
+lm.preds.extra["id"] = test[,1]
+lm.preds.extra <- lm.preds.extra[c(2,1)] #Switch columns, so they are in the correct order
+
+write.table(lm.preds.extra, file = "lm_extra_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
+#KAGGLE SCORE = ???
+
+##############################################
+### CREATE BASIC LINEAR MODEL WITH BIGRAMS ###
+##############################################
+
+### PREPARE/CLEAN TRAINING SET ###
+df.99.scored3 <- clean_data(train, 0.995, filter_symbol = F, stop_words = F, 
+                            extra = T, weighting = "ntn", ngram = T)
+corpus3 <- colnames(df.99.scored3)[!(colnames(df.99.scored3) %in% c("num_at", "num_exlaim",
+                                                                    "num_hash", "num_question", "odd_char"))]
+df.99.scored3["SCORE"] <- train[,1]
+
+
+###### PREPARE TESTING SET ###### 
+df.test.preds3 <- clean_data(test, 0.995, filter_symbol = F, stop_words = F, 
+                             extra = T, dict = corpus3, weighting = "ntn", ngram = T)
+
+
+### MAKE THE MODEL ###
+lm.df.99.3 <- lm(SCORE~., data=df.99.scored3)
+summary(lm.df.99.3) #Look to see what variables have a significance greater than or equal to 0.1
+
+summary(lm.df.99.3)$coefficients[summary(lm.df.99.3)$coefficients[ ,4] < 0.05, ] 
+
+### KEEP ONLY PREDICTIVE VARIABLES
+lm.df.99.32 <- lm(SCORE ~ amazon + arent + autom + awesom + best + `brake steer` + 
+                    `cant wait` + `car cant` + `car hit` + `car use` + `car will` + 
+                    caus + concern + design + dont + drive + `drive car` + excit + heard + 
+                    hell + hope + insid + instead + less + lethal + love + `make car` +
+                    mean + mobil + near + need + `one driverless` + peopl + play +
+                    point + `possibl go` + potenti + program + put + `put driverless` + save + set + 
+                    `steer wheel` + stori + street + sure + tell + thought + two + `use driverless` +
+                    `wait driverless` + `want driverless` + warn + wheel + wrong + 
+                    num_exlaim + num_question, data = df.99.scored3)
+summary(lm.df.99.32)
+
+### REPEAT
+lm.df.99.33 <- lm(SCORE ~ arent  + awesom + best + 
+                    `cant wait` + `car cant` + `car hit` + `car will` + 
+                    concern + dont + `drive car` + excit + heard + 
+                    hell + hope + instead + less + lethal + love +
+                    mean + mobil + need + play +
+                    point + potenti + program + put + `put driverless` + save + set + 
+                    `steer wheel` + stori + tell + thought + two +
+                    `wait driverless` + `want driverless` + warn + wheel + wrong + 
+                    num_exlaim + num_question, data = df.99.scored3)
+summary(lm.df.99.33)
+
+### REPEAT
+lm.df.99.34 <- lm(SCORE ~ arent  + awesom + best + 
+                    `cant wait` + `car cant` + `car hit` + 
+                    concern + dont + `drive car` + excit + heard + 
+                    hell + hope + instead + less + lethal + love +
+                    mean + mobil + need + play +
+                    point + potenti + program + put + `put driverless` + save + set + 
+                    stori + tell + thought + two +
+                    `want driverless` + warn + wheel + wrong + 
+                    num_exlaim + num_question, data = df.99.scored3)
+summary(lm.df.99.34)
+
+#Use predict function to make predictions on test set sentiment using optimal linear model
+mypreds.bi <- data.frame(predict(lm.df.99.3, newdata = df.test.preds3))
+
+sentiment <- round(mypreds.bi[,1],digits=0) #Round all values to closest integer
+lm.preds.bi <- as.data.frame(sentiment) #Place into a data frame
+
+# Change <1 to 1 and >5 to 5 
+lm.preds.bi[lm.preds.bi > 5,] = 5
+lm.preds.bi[lm.preds.bi < 1,] = 1
+
+#Add in ID numbers
+lm.preds.bi["id"] = test[,1]
+lm.preds.bi <- lm.preds.extra[c(2,1)] #Switch columns, so they are in the correct order
+
+write.table(lm.preds.extra, file = "lm_bi_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
+#KAGGLE SCORE = ???
