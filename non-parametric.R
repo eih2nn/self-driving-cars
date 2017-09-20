@@ -77,6 +77,12 @@ preds <- clean_data(train2, 0.995, F, T, F, weighting = "ntn")
 p <- class::knn.cv(preds, as.factor(train2$sentiment), k = 19)
 sum(p == train2$sentiment)/length(train2$sentiment)
 
+# Play around with ngram analysis
+train2 <- expand_data(train, c(3, 1, 1, 1, 2))
+preds <- clean_data(train2, 0.99, F, T, F, weighting = "ntn", ngram = T)
+p <- class::knn.cv(preds, as.factor(train2$sentiment), k = 19)
+sum(p == train2$sentiment)/length(train2$sentiment)
+
 # Train on new data
 
 # Start by preprocessing data based on rules discovered above

@@ -20,7 +20,7 @@ library(RWeka)
 # @param weighting: string representing weighting to be used for the SMART function
 # @param ngram: boolean telling whether to use bigram analysis
 # @param n: Number of grams to use in ngram
-clean_data <- function(train, sparcity = 0.99, filter_symbol = T, stop_words = T, extra = T, dict = NULL, weighting = "ntn", ngram = F, n = 2){
+clean_data <- function(train, sparcity = 0.99, filter_symbol = F, stop_words = F, extra = F, dict = NULL, weighting = "ntn", ngram = F, n = 2){
   train2 <- train
   if(filter_symbol){
     train2$text <- remove_at(train2$text)

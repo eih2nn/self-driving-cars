@@ -18,7 +18,7 @@ sample <- read_csv("sample.csv") #Read in the csv data file for sample submissio
 
 ### PREPARE/CLEAN TRAINING SET ###
 df.99.scored <- clean_data(train, 0.99, filter_symbol = F, stop_words = F, 
-                            extra = F, weighting = "ntn", ngram = F)
+                            extra = T, weighting = "ntn", ngram = F)
 corpus <- colnames(df.99.scored)[!(colnames(df.99.scored) %in% c("num_at", "num_exlaim",
                                                                "num_hash", "num_question", "odd_char"))]
 df.99.scored["SCORE"] <- train[,1]
