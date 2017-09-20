@@ -196,13 +196,13 @@ lm.preds.optimal["id"] = test[,1]
 lm.preds.optimal <- lm.preds.optimal[c(2,1)] #Switch columns, so they are in the correct order
 
 write.table(lm.preds.optimal, file = "lm_optimal_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
-#KAGGLE SCORE = ???
+#KAGGLE SCORE = 0.66 (strangely, not better)
 
 
 ### USE LDA TO CREATE A NEW LINEAR MODEL ###
 
 df.99.scored.2 <- df.99.scored[, !(colnames(df.99.scored) %in% c("univers"))]
-z <- lda(SCORE ~ ., df.99.scored.2, CV = T)
+z <- lda(SCORE ~ ., df.99.scored.2, CV = T) #Assumes frequencies from training set
 sum(z$class == train$sentiment)/length(z$class)
 
 ### LDA PREDICTION ... ###
