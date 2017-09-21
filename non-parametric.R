@@ -1,6 +1,6 @@
 library(tm)
 library(readr)
-source("knn.R")
+source("knn from scratch.R")
 source("preprocess.R")
 library(MASS) # Used for lda
 library(class)
@@ -18,38 +18,40 @@ train2 <- train %>%
 
 # Run the KNN
 
-# Find ideal K with baseline values
-preds <- clean_data(train, 0.99, F, T, F)
-k <- seq(1, 2 * as.integer(sqrt(nrow(preds))), by = 2)
+# Use LOOCV to find range of good k-values
+preds <- clean_data(train, 0.99, F, F, F)
+k <- seq(1, as.integer(sqrt(nrow(preds))) + 4, by = 2)
+reses <- vector(mode = "numeric", length = length(k))
+for(i in 1:length(k)){
+  reses[i] <- knn.loocv(preds, train$sentiment, k = k[i])
+  print(i)
+  # reses[i] <- sum(p == train$sentiment)/length(train$sentiment)
+}
+reses 
+
+# Gives a range of k of 11-33
+
+# Using rang eof k's, run kfold to narrow even further
+preds <- clean_data(train, 0.99, F, F, F)
+k <- seq(11, 33, by = 2)
 reses <- vector(mode = "numeric", length = length(k))
 for(i in 1:length(k)){
   p <- knn.cv(preds, as.factor(train$sentiment), k = k[i])
   reses[i] <- sum(p == train$sentiment)/length(train$sentiment)
 }
 reses 
-
-# Gives a best k of 19, 21, 23
+# Gives best k-value of 25
 
 # Optimize the sparcity using optimal k
 sparc <- c(0.95, 0.96, 0.975, 0.985, 0.99)
 reses <- vector(mode = "numeric", length = length(sparc))
 for(i in 1:length(sparc)){
   preds <- clean_data(train, sparc[i], F, T, F)
-  p <- knn.cv(preds, as.factor(train$sentiment), k = 19)
+  p <- knn.cv(preds, as.factor(train$sentiment), k = 25)
   reses[i] <- sum(p == train$sentiment)/length(train$sentiment)
 }
 reses
 # Gives optimal sparcity of 0.975
-
-# See if filtering symbols helps
-preds <- clean_data(train, 0.975, F, T, F)
-p <- knn.cv(preds, as.factor(train$sentiment), k = 19)
-sum(p == train$sentiment)/length(train$sentiment)
-
-preds <- clean_data(train, 0.975, T, T, F)
-p <- knn.cv(preds, as.factor(train$sentiment), k = 19)
-sum(p == train$sentiment)/length(train$sentiment)
-# Keeping symbols seems to help
 
 # See if keeping stopwords helps
 preds <- clean_data(train, 0.975, F, F, F)
@@ -69,19 +71,19 @@ sum(p == train$sentiment)/length(train$sentiment)
 preds <- clean_data(train, 0.975, F, T, T)
 p <- knn.cv(preds, as.factor(train$sentiment), k = 19)
 sum(p == train$sentiment)/length(train$sentiment)
-# Adding features does not help
+# Adding features does help
 
-# Play around with different weighting schemes
-train2 <- expand_data(train, c(1, 1, 1, 1, 1))
-preds <- clean_data(train2, 0.995, F, T, F, weighting = "ntn")
+# Play around with different distributions
+train2 <- expand_data(train, c(3, 1, 1, 1, 2))
+preds <- clean_data(train2, 0.995, F, T, F)
 p <- class::knn.cv(preds, as.factor(train2$sentiment), k = 19)
 sum(p == train2$sentiment)/length(train2$sentiment)
 
 # Play around with ngram analysis
 train2 <- expand_data(train, c(3, 1, 1, 1, 2))
-preds <- clean_data(train2, 0.99, F, T, F, weighting = "ntn", ngram = T)
-p <- class::knn.cv(preds, as.factor(train2$sentiment), k = 19)
-sum(p == train2$sentiment)/length(train2$sentiment)
+preds <- clean_data(train, 0.99, F, T, F, ngram = T)
+p <- class::knn.cv(preds, as.factor(train$sentiment), k = 19)
+sum(p == train$sentiment)/length(train$sentiment)
 
 # Train on new data
 

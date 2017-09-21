@@ -17,16 +17,16 @@ sample <- read_csv("sample.csv") #Read in the csv data file for sample submissio
 
 
 ### PREPARE/CLEAN TRAINING SET ###
-df.99.scored <- clean_data(train, 0.99, filter_symbol = F, stop_words = F, 
-                            extra = T, weighting = "ntn", ngram = F)
-corpus <- colnames(df.99.scored)[!(colnames(df.99.scored) %in% c("num_at", "num_exlaim",
+df.99.scores <- clean_data(train, 0.99, filter_symbol = F, stop_words = F, 
+                            extra = F, ngram = F)
+corpus <- colnames(df.99.scores)[!(colnames(df.99.scores) %in% c("num_at", "num_exlaim",
                                                                "num_hash", "num_question", "odd_char"))]
 df.99.scored["SCORE"] <- train[,1]
 
 
 ###### PREPARE TESTING SET ###### 
-df.test.preds <- clean_data(test, 0.99, filter_symbol = F, stop_words = F, 
-                            extra = F, dict = corpus, weighting = "ntn")
+df.test.preds2 <- clean_data(test, 0.99, filter_symbol = F, stop_words = F, 
+                            extra = F, dict = corpus)
 
 ###############################################################
 ### CREATE BASIC LINEAR MODEL WITH CLEANED 99% TRAINING SET ###
@@ -220,7 +220,7 @@ write.table(lm.preds.extra, file = "lm_extra_car_tweets.csv", row.names=F, sep="
 
 ### PREPARE/CLEAN TRAINING SET ###
 df.99.scored3 <- clean_data(train, 0.995, filter_symbol = F, stop_words = F, 
-                            extra = T, weighting = "ntn", ngram = T)
+                            extra = T, ngram = T)
 corpus3 <- colnames(df.99.scored3)[!(colnames(df.99.scored3) %in% c("num_at", "num_exlaim",
                                                                     "num_hash", "num_question", "odd_char"))]
 df.99.scored3["SCORE"] <- train[,1]
@@ -228,7 +228,7 @@ df.99.scored3["SCORE"] <- train[,1]
 
 ###### PREPARE TESTING SET ###### 
 df.test.preds3 <- clean_data(test, 0.995, filter_symbol = F, stop_words = F, 
-                             extra = T, dict = corpus3, weighting = "ntn", ngram = T)
+                             extra = T, dict = corpus3, ngram = T)
 
 
 ### MAKE THE MODEL ###
