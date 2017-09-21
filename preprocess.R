@@ -87,14 +87,14 @@ clean_data <- function(train, sparcity = 0.99, filter_symbol = F, stop_words = F
 
 # Extract additional, potentially useful, features from the data
 feature_extract <- function(train){
-  train_mod <- mutate(odd_char = str_count(text, "[Ì¢???âÂåüèÏ???Û¡ÂsteÃ]"), train)
+ # train_mod <- mutate(odd_char = str_count(text, "[Ì¢???âÂåüèÏ???Û¡ÂsteÃ]"), train)
   train_mod["num_hash"] <- unlist(lapply(train_mod$text, num_hashtag))
   train_mod["num_at"] <- unlist(lapply(train_mod$text, num_at))
   train_mod <- mutate("num_exlaim" = str_count(text, "!"), train_mod)
   train_mod <- mutate("num_question" = str_count(text, "\\?"), train_mod)
   
   # Scale all features
-  train_mod$odd_char <- train_mod$odd_char/max(train_mod$odd_char)
+ # train_mod$odd_char <- train_mod$odd_char/max(train_mod$odd_char)
   train_mod["num_hash"] <- train_mod["num_hash"]/max(train_mod["num_hash"])
   train_mod["num_at"] <- train_mod["num_at"]/max(train_mod["num_at"])
   train_mod$num_exlaim <- train_mod$num_exlaim/max(train_mod$num_exlaim)
@@ -112,9 +112,9 @@ remove_at <- function(x){
 }
 
 # Remove certain oddly encoded symbols
-remove_symbols <- function(x){
-  return(str_replace_all(x$text, "[Ì¢???âÂåüèÏ???Û¡ÂÃ???Ò]", ""))
-}
+# remove_symbols <- function(x){
+#   return(str_replace_all(x$text, "[Ì¢???âÂåüèÏ???Û¡ÂÃ???Ò]", ""))
+# }
 
 # Return the number of words in a string
 num_words <- function(x){
