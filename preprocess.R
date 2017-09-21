@@ -87,7 +87,7 @@ clean_data <- function(train, sparcity = 0.99, filter_symbol = F, stop_words = F
 
 # Extract additional, potentially useful, features from the data
 feature_extract <- function(train){
- # train_mod <- mutate(odd_char = str_count(text, "[Ì¢???âÂåüèÏ???Û¡ÂsteÃ]"), train)
+  train_mod <- mutate(odd_char = str_count(text, "[Ì¢????????????Û¡?ste?]"), train)
   train_mod["num_hash"] <- unlist(lapply(train_mod$text, num_hashtag))
   train_mod["num_at"] <- unlist(lapply(train_mod$text, num_at))
   train_mod <- mutate("num_exlaim" = str_count(text, "!"), train_mod)
@@ -113,7 +113,7 @@ remove_at <- function(x){
 
 # Remove certain oddly encoded symbols
 # remove_symbols <- function(x){
-#   return(str_replace_all(x$text, "[Ì¢???âÂåüèÏ???Û¡ÂÃ???Ò]", ""))
+#   return(str_replace_all(x$text, "[Ì¢????????????Û¡??????]", ""))
 # }
 
 # Return the number of words in a string
@@ -149,3 +149,4 @@ expand_data <- function(x, distribution){
 
 # Token data into n-gram tokens, comes from https://stackoverflow.com/questions/8898521/finding-2-3-word-phrases-using-r-tm-package
 tokenize_ngrams <- function(x, n=1) return(rownames(as.data.frame(unclass(textcnt(x,method="string",n=n)))))
+
