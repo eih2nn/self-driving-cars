@@ -149,3 +149,4 @@ expand_data <- function(x, distribution){
 
 # Token data into n-gram tokens, comes from https://stackoverflow.com/questions/8898521/finding-2-3-word-phrases-using-r-tm-package
 tokenize_ngrams <- function(x, n=1) return(rownames(as.data.frame(unclass(textcnt(x,method="string",n=n)))))
+
