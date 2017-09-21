@@ -17,10 +17,9 @@ library(RWeka)
 # @param extra: boolean specifying whether to extract additional features from 
 #   the data
 # @param dict: list representing all words in the train weighted matrix
-# @param weighting: string representing weighting to be used for the SMART function
 # @param ngram: boolean telling whether to use bigram analysis
 # @param n: Number of grams to use in ngram
-clean_data <- function(train, sparcity = 0.99, filter_symbol = F, stop_words = F, extra = F, dict = NULL, weighting = "ntn", ngram = F, n = 2){
+clean_data <- function(train, sparcity = 0.99, filter_symbol = F, stop_words = F, extra = F, dict = NULL, ngram = F, n = 2){
   train2 <- train
   if(filter_symbol){
     train2$text <- remove_at(train2$text)
@@ -48,21 +47,21 @@ clean_data <- function(train, sparcity = 0.99, filter_symbol = F, stop_words = F
     
     # recompute TF-IDF matrix
     if(is.null(dict)){
-      tweets.clean.tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = function(x){weightSMART(x, spec = weighting)},
+      tweets.clean.tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = weightTfIdf,
                                                                            tokenize = BigramTokenizer))
       tfidf = removeSparseTerms(tweets.clean.tfidf, sparcity) 
     }else{
-      tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = function(x){weightSMART(x, spec = weighting)}, 
+      tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = weightTfIdf, 
                                                               dictionary = dict,
                                                               tokenize = BigramTokenizer))
     }
   }else{
     # recompute TF-IDF matrix
     if(is.null(dict)){
-      tweets.clean.tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = function(x){weightSMART(x, spec = weighting)}))
+      tweets.clean.tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = weightTfIdf))
       tfidf = removeSparseTerms(tweets.clean.tfidf, sparcity) 
     }else{
-      tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = function(x){weightSMART(x, spec = weighting)}, 
+      tfidf = DocumentTermMatrix(tweets.clean, control = list(weighting = weightTfIdf, 
                                                               dictionary = dict))
     }
   }
@@ -88,6 +87,7 @@ clean_data <- function(train, sparcity = 0.99, filter_symbol = F, stop_words = F
 # Extract additional, potentially useful, features from the data
 feature_extract <- function(train){
  # train_mod <- mutate(odd_char = str_count(text, "[Ì¢???âÂåüèÏ???Û¡ÂsteÃ]"), train)
+  train_mod <- train
   train_mod["num_hash"] <- unlist(lapply(train_mod$text, num_hashtag))
   train_mod["num_at"] <- unlist(lapply(train_mod$text, num_at))
   train_mod <- mutate("num_exlaim" = str_count(text, "!"), train_mod)
