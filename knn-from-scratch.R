@@ -1,3 +1,9 @@
+#TEAM COMPETITION 3-1
+#Elizabeth Homan
+#Ben Greenawald
+#Leelakrishna (Sai) Bollempalli
+
+
 # Implementation of the KNN algorithm for classification
 
 # Results results can differ slightly from other implementations

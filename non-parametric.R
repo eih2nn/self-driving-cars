@@ -1,10 +1,15 @@
+#TEAM COMPETITION 3-1
+#Elizabeth Homan
+#Ben Greenawald
+#Leelakrishna (Sai) Bollempalli
+
 library(tm)
 library(readr)
-source("knn from scratch.R")
+source("knn-from-scratch.R")
 source("preprocess.R")
-library(class)
+library(class) # ONLY USED FOR EXPLORING DIFFERENT KNN MODELS (because it is so much faster), 
+# PREDICTIONS USE OUR MODEL AS SPECIFIED BY THE ASSIGNMENT
 library(dplyr)
-library(tau)
 
 ##### Read in the data
 train <- read_csv("train.csv")
@@ -25,7 +30,6 @@ reses <- vector(mode = "numeric", length = length(k))
 for(i in 1:length(k)){
   reses[i] <- knn.loocv(preds, train$sentiment, k = k[i])
   print(i)
-  # reses[i] <- sum(p == train$sentiment)/length(train$sentiment)
 }
 reses 
 # Gives a range of k of 11-33
@@ -36,7 +40,6 @@ k <- seq(11, 33, by = 2)
 reses <- vector(mode = "numeric", length = length(k))
 for(i in 1:length(k)){
   reses[i] <- knn.kfolds(preds, as.factor(train$sentiment), k = k[i])
-  # reses[i] <- sum(p == train$sentiment)/length(train$sentiment)
   print(i)
 }
 reses 
@@ -114,4 +117,4 @@ predicts <- knn.R(train = train.data, test = test.data, cl = train$sentiment, k 
 
 results <- cbind("id" = test$id, "sentiment" = predicts)
 
-write_csv(data.frame(results), "predictions_knn_final_ben.csv")
+write_csv(data.frame(results), "Predictions/predictions_knn_final_ben.csv")

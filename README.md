@@ -3,6 +3,18 @@ Kaggle In Class Competition re: Twitter Sentiment Analysis of Self-Driving Cars
 
 
 
+### Important Files
+
+This repository contains many files used throughout this competition, but the important files are as follows:
+
+* preprocess.R: File containing the functions used in the preprocessing of the data
+* knn-from-scratch.R: File containing our implementation of the KNN classification algorithm
+* parametric.R: File that contains code for our parametric models used in the competition
+* non-parametric.R: File that contains our non-parametric (KNN) models used in this competition
+* Predictions/: A directory containing all of our predictions from throughout the competition
+
+
+
 ### Group Roles
 
 All group members participated in all parts of this project, but the primary responsibilities were distributed as follows:

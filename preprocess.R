@@ -1,3 +1,9 @@
+#TEAM COMPETITION 3-1
+#Elizabeth Homan
+#Ben Greenawald
+#Leelakrishna (Sai) Bollempalli
+
+
 # Script to preprocess the text data
 
 library(dplyr)

@@ -71,7 +71,7 @@ lm.preds[lm.preds < 1,] = 1
 lm.preds["id"] = test[,1]
 lm.preds <- lm.preds[c(2,1)] #Switch columns, so they are in the correct order
 
-write.table(lm.preds, file = "lm_car_tweets_eih.csv", row.names=F, sep=",") #Write out to a csv
+write.table(lm.preds, file = "Predictions/lm_car_tweets_eih.csv", row.names=F, sep=",") #Write out to a csv
 #KAGGLE SCORE = 0.68302
 
 #######################################################
@@ -144,7 +144,7 @@ lm.preds.optimal[lm.preds.optimal < 1,] = 1
 lm.preds.optimal["id"] = test[,1]
 lm.preds.optimal <- lm.preds.optimal[c(2,1)] #Switch columns, so they are in the correct order
 
-write.table(lm.preds.optimal, file = "lm_optimal_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
+write.table(lm.preds.optimal, file = "Predictions/lm_optimal_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
 #KAGGLE SCORE = 0.66 (strangely, not better)
 
 
@@ -211,7 +211,7 @@ lm.preds.extra[lm.preds.extra < 1,] = 1
 lm.preds.extra["id"] = test[,1]
 lm.preds.extra <- lm.preds.extra[c(2,1)] #Switch columns, so they are in the correct order
 
-write.table(lm.preds.extra, file = "lm_extra_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
+write.table(lm.preds.extra, file = "Predictions/lm_extra_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
 #KAGGLE SCORE = ???
 
 ##############################################
@@ -282,5 +282,5 @@ lm.preds.bi[lm.preds.bi < 1,] = 1
 lm.preds.bi["id"] = test[,1]
 lm.preds.bi <- lm.preds.bi[c(2,1)] #Switch columns, so they are in the correct order
 
-write.table(lm.preds.bi, file = "lm_bi_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
+write.table(lm.preds.bi, file = "Predictions/lm_bi_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
 #KAGGLE SCORE = ???
