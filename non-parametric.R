@@ -2,7 +2,6 @@ library(tm)
 library(readr)
 source("knn from scratch.R")
 source("preprocess.R")
-library(MASS) # Used for lda
 library(class)
 library(dplyr)
 library(tau)
@@ -18,6 +17,7 @@ train2 <- train %>%
 
 # Run the KNN
 
+set.seed(3)
 # Use LOOCV to find range of good k-values
 preds <- clean_data(train, 0.99, F, F, F)
 k <- seq(1, as.integer(sqrt(nrow(preds))) + 4, by = 2)
@@ -28,19 +28,19 @@ for(i in 1:length(k)){
   # reses[i] <- sum(p == train$sentiment)/length(train$sentiment)
 }
 reses 
-
 # Gives a range of k of 11-33
 
-# Using rang eof k's, run kfold to narrow even further
+# Using range of k's, run kfold to narrow even further
 preds <- clean_data(train, 0.99, F, F, F)
 k <- seq(11, 33, by = 2)
 reses <- vector(mode = "numeric", length = length(k))
 for(i in 1:length(k)){
-  p <- knn.cv(preds, as.factor(train$sentiment), k = k[i])
-  reses[i] <- sum(p == train$sentiment)/length(train$sentiment)
+  reses[i] <- knn.kfolds(preds, as.factor(train$sentiment), k = k[i])
+  # reses[i] <- sum(p == train$sentiment)/length(train$sentiment)
+  print(i)
 }
 reses 
-# Gives best k-value of 25
+# Gives best k-value of ~25 so we will just use 25
 
 # Optimize the sparcity using optimal k
 sparc <- c(0.95, 0.96, 0.975, 0.985, 0.99)
@@ -51,55 +51,67 @@ for(i in 1:length(sparc)){
   reses[i] <- sum(p == train$sentiment)/length(train$sentiment)
 }
 reses
-# Gives optimal sparcity of 0.975
+# Gives optimal sparcity of 0.975-0.99 so we will continue with 
+# sparcity 0.975 to reduce dimensionality unless otherwise specified
 
-# See if keeping stopwords helps
+# See if keeping stopwords helps (first is stopwords removed)
 preds <- clean_data(train, 0.975, F, F, F)
-p <- knn.cv(preds, as.factor(train$sentiment), k = 19)
+p <- knn.cv(preds, as.factor(train$sentiment), k = 25)
 sum(p == train$sentiment)/length(train$sentiment)
+# 0.6136595
 
 preds <- clean_data(train, 0.975, F, T, F)
-p <- knn.cv(preds, as.factor(train$sentiment), k = 19)
+p <- knn.cv(preds, as.factor(train$sentiment), k = 25)
 sum(p == train$sentiment)/length(train$sentiment)
-# Removing stopwords helps
+# 0.6146789
+# Inconclusive results
 
-# See if adding additional features helps
-preds <- clean_data(train, 0.975, F, T, F)
-p <- knn.cv(preds, as.factor(train$sentiment), k = 19)
+# See if adding additional features helps (first is without adding)
+preds <- clean_data(train, 0.975, F, F, F)
+p <- knn.cv(preds, as.factor(train$sentiment), k = 25)
 sum(p == train$sentiment)/length(train$sentiment)
+# 0.6146789
 
-preds <- clean_data(train, 0.975, F, T, T)
-p <- knn.cv(preds, as.factor(train$sentiment), k = 19)
+preds <- clean_data(train, 0.975, F, F, T)
+p <- knn.cv(preds, as.factor(train$sentiment), k = 25)
 sum(p == train$sentiment)/length(train$sentiment)
-# Adding features does help
+# 0.6136595
+# Inconclusive results
 
 # Play around with different distributions
 train2 <- expand_data(train, c(3, 1, 1, 1, 2))
-preds <- clean_data(train2, 0.995, F, T, F)
+preds <- clean_data(train2, 0.995, F, F, F)
 p <- class::knn.cv(preds, as.factor(train2$sentiment), k = 19)
 sum(p == train2$sentiment)/length(train2$sentiment)
+# Many different values for the distribution were tried, 
+# this only seemed to make things worse.
 
 # Play around with ngram analysis
-train2 <- expand_data(train, c(3, 1, 1, 1, 2))
-preds <- clean_data(train, 0.99, F, T, F, ngram = T)
-p <- class::knn.cv(preds, as.factor(train$sentiment), k = 19)
+# Change sparcity to include more of the bigrams
+preds <- clean_data(train, 0.99, F, F, T, ngram = T)
+p <- knn.kfolds(preds, as.factor(train$sentiment), k = 19, cosine = T)
 sum(p == train$sentiment)/length(train$sentiment)
+# 0.6156983
+# Bigram seems to help a little bit
 
 # Train on new data
 
 # Start by preprocessing data based on rules discovered above
-train.data <- clean_data(train, 0.975, F, T, F)
+train.data <- clean_data(train, 0.99, filter_symbol = F, stop_words = F, 
+                         extra = F, ngram = T)
+corpus <- colnames(train.data)[!(colnames(train.data) %in% c("num_at", "num_exlaim",
+                                                                    "num_hash", "num_question", "odd_char"))]
 
 # Process the test data in the same way
-test.data <- rbind(test, c(1000, paste(colnames(train.data), collapse = " ")))
-test.data <- clean_data(test.data, 0.975, F, T, F, colnames(train.data))
+test.data <- clean_data(test, 0.99, filter_symbol = F, stop_words = F, 
+                        extra = F, ngram = T, dict = corpus)
 
 # Add the extra features
 train.data <- cbind(train.data, feature_extract(train))
 test.data <- cbind(test.data, feature_extract(test))
 
-predicts <- knn(train = train.data, test = test.data, cl = train$sentiment, k = 17)
+predicts <- knn.R(train = train.data, test = test.data, cl = train$sentiment, k = 25, cosine = F)
 
 results <- cbind("id" = test$id, "sentiment" = predicts)
 
-write_csv(data.frame(results), "predictions_knn_ben.csv")
+write_csv(data.frame(results), "predictions_knn_final_ben.csv")

@@ -238,39 +238,34 @@ summary(lm.df.99.3) #Look to see what variables have a significance greater than
 summary(lm.df.99.3)$coefficients[summary(lm.df.99.3)$coefficients[ ,4] < 0.05, ] 
 
 ### KEEP ONLY PREDICTIVE VARIABLES
-lm.df.99.32 <- lm(SCORE ~ amazon + arent + autom + awesom + best + `brake steer` + 
-                    `cant wait` + `car cant` + `car hit` + `car use` + `car will` + 
-                    caus + concern + design + dont + drive + `drive car` + excit + heard + 
-                    hell + hope + insid + instead + less + lethal + love + `make car` +
-                    mean + mobil + near + need + `one driverless` + peopl + play +
-                    point + `possibl go` + potenti + program + put + `put driverless` + save + set + 
-                    `steer wheel` + stori + street + sure + tell + thought + two + `use driverless` +
-                    `wait driverless` + `want driverless` + warn + wheel + wrong + 
-                    num_exlaim + num_question, data = df.99.scored3)
+lm.df.99.32 <- lm(SCORE ~ amazon + arent + autom + awesom + best + 
+                    `cant wait` + `car come` + `car hit` + come +
+                    caus + concern + dont + `drive car` + driverless + enough + excit + get +  heard + 
+                    hell + hope + less + lethal + like + love + +
+                    mean + mobil + money + near + need + one + `one driverless` + peopl + play +
+                    point + `possibl go` + potenti + program + put + realiti + + safer + save + steer + 
+                    `steer wheel` + stori + street + sure + thing + two + `use driverless` +
+                    warn + wont + wrong + num_exlaim + num_question, data = df.99.scored3)
 summary(lm.df.99.32)
 
 ### REPEAT
-lm.df.99.33 <- lm(SCORE ~ arent  + awesom + best + 
-                    `cant wait` + `car cant` + `car hit` + `car will` + 
-                    concern + dont + `drive car` + excit + heard + 
-                    hell + hope + instead + less + lethal + love +
-                    mean + mobil + need + play +
-                    point + potenti + program + put + `put driverless` + save + set + 
-                    `steer wheel` + stori + tell + thought + two +
-                    `wait driverless` + `want driverless` + warn + wheel + wrong + 
-                    num_exlaim + num_question, data = df.99.scored3)
+lm.df.99.33 <- lm(SCORE ~ arent + autom + awesom + best + 
+                    `cant wait` + `car hit` + come +
+                    concern + dont + `drive car` + enough + excit +  heard + 
+                    hell + hope + lethal + love + +
+                    mean + money + need + one + `one driverless` + play +
+                    point  + potenti + program + put + safer + save + 
+                    stori + thing + wont + wrong + num_exlaim + num_question, data = df.99.scored3)
 summary(lm.df.99.33)
 
 ### REPEAT
-lm.df.99.34 <- lm(SCORE ~ arent  + awesom + best + 
-                    `cant wait` + `car cant` + `car hit` + 
-                    concern + dont + `drive car` + excit + heard + 
-                    hell + hope + instead + less + lethal + love +
-                    mean + mobil + need + play +
-                    point + potenti + program + put + `put driverless` + save + set + 
-                    stori + tell + thought + two +
-                    `want driverless` + warn + wheel + wrong + 
-                    num_exlaim + num_question, data = df.99.scored3)
+lm.df.99.34 <- lm(SCORE ~ arent + awesom + best + 
+                    `cant wait` + `car hit` +
+                    concern + dont + `drive car` + enough + excit +  heard + 
+                    hell + hope + lethal + love + +
+                    mean + money + need + one + `one driverless` + play +
+                    point  + potenti + program + put + safer + save + 
+                    stori + thing + wont + wrong + num_exlaim + num_question, data = df.99.scored3)
 summary(lm.df.99.34)
 
 #Use predict function to make predictions on test set sentiment using optimal linear model
@@ -287,5 +282,5 @@ lm.preds.bi[lm.preds.bi < 1,] = 1
 lm.preds.bi["id"] = test[,1]
 lm.preds.bi <- lm.preds.bi[c(2,1)] #Switch columns, so they are in the correct order
 
-write.table(lm.preds.extra, file = "lm_bi_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
+write.table(lm.preds.bi, file = "lm_bi_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
 #KAGGLE SCORE = ???

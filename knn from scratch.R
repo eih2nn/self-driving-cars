@@ -7,19 +7,24 @@
 # @param train: Vectors of training predictors
 # @param test: Vectors for unseen data
 # @param class: Corresponding class of training predictors
-knn.R <- function(train, test, class, k = 1){
+# @param cosine: Set as true to use the cosine distance between points
+knn.R <- function(train, test, class, k = 1, cosine = F){
   train.full <- cbind(train, class)
-  preds <- unname(unlist(apply(test, 1, knn.classify, train = train.full, k = k)))
+  preds <- unname(unlist(apply(test, 1, knn.classify, train = train.full, k = k, cosine = cosine)))
   return(preds)
 }
 
 # Classifies a single test case based on training data
 # @param train: training data with the response as the final column
 # @param test.case: single vector of unseen response
-knn.classify <- function(test.case, train, k){
+knn.classify <- function(test.case, train, k, cosine = F){
   cl <- train[, ncol(train)]
   train <- train[, -ncol(train)]
-  res <- apply(train, 1, distance_cosine, test.case =  test.case)
+  if(cosine){
+    res <- apply(train, 1, distance_cosine, test.case =  test.case)
+  }else{
+    res <- apply(train, 1, distance, test.case =  test.case)
+  }
   train <- cbind(train, "dist" = res)
   train <- as.data.frame(cbind(train, cl))
   train <- head(train[order(train$dist), ], n = k)
@@ -36,7 +41,7 @@ distance_cosine <- function(x, test.case){
   ret <- sum(x * test.case)/(sqrt(sum(x^2))*sqrt(sum(test.case^2)))
   return(ret)
 }
-knn.loocv <- function(train, class, k = 1){
+knn.loocv <- function(train, class, k = 1, cosine = F){
   accuracy <- vector(mode="numeric", length = nrow(train))
   train <- cbind(train, class)
   for(i in 1:nrow(train)){
@@ -44,7 +49,7 @@ knn.loocv <- function(train, class, k = 1){
     train.class <- train[-i, ncol(train)]
     test.data <- train[i, -ncol(train)]
     true.class <- train[i, ncol(train)]
-    pred <- knn.R(train = train.data, test = test.data, class = train.class, k = k)
+    pred <- knn.R(train = train.data, test = test.data, class = train.class, k = k, cosine = cosine)
     accuracy[i] <- pred == true.class
   }
   
@@ -58,7 +63,7 @@ partition_size <- function(size, folds){
   return(ret)
 }
 
-knn.kfolds <- function(train, class, k = 1, folds = 5){
+knn.kfolds <- function(train, class, k = 1, folds = 5, cosine = F){
   partition_sizes <- partition_size(nrow(train), folds)
   kfolds <- list()
   indices <- 1:nrow(train)
@@ -77,7 +82,7 @@ knn.kfolds <- function(train, class, k = 1, folds = 5){
     train.class <- train[-test_indices, ncol(train)]
     test.data <- train[test_indices, -ncol(train)]
     true.class <- train[test_indices, ncol(train)]
-    pred <- knn.R(train = train.data, test = test.data, class = train.class, k = k)
+    pred <- knn.R(train = train.data, test = test.data, class = train.class, k = k, cosine = cosine)
     accuracy[i] <- mean(sum(pred == true.class)/length(pred))
   }
   
