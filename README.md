@@ -53,10 +53,9 @@ The parametric approach presented it's own set of issues. Namely, that linear re
 
 ### Final Results
 
-TODO
-
-
+Our best linear regression model produced an accuracy of 0.64488
+Our best K-NN model produced an accuracy of 0.6653
 
 ### Discussion
 
-TODO
+Interestingly, bigrams added little value in both linear regression and K-NN model. Selecting predictors for linear regression by plotting sentiment score against individual variables was not an effective approach for this text mining problem. This is probably because of the sparsity of the data frame especially considering we had 1000 tweets to train the model with.
