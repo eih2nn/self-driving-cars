@@ -283,4 +283,5 @@ lm.preds.bi["id"] = test[,1]
 lm.preds.bi <- lm.preds.bi[c(2,1)] #Switch columns, so they are in the correct order
 
 write.table(lm.preds.bi, file = "Predictions/lm_bi_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
-#KAGGLE SCORE = ???
+
+#KAGGLE SCORE (final score including the private test file accuracy) = 0.64488
