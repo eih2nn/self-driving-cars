@@ -118,3 +118,5 @@ predicts <- knn.R(train = train.data, test = test.data, cl = train$sentiment, k 
 results <- cbind("id" = test$id, "sentiment" = predicts)
 
 write_csv(data.frame(results), "Predictions/predictions_knn_final_ben.csv")
+
+# The final accuracy (including the private test set) score of the K-NN model is 0.66530
