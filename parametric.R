@@ -13,19 +13,18 @@ source("preprocess.R")
 #Read in files:
 train <- read_csv("train.csv") #Read in the comma separated value data file for training the model
 test <- read_csv("test.csv") #Read in the csv data file for testing the model
-sample <- read_csv("sample.csv") #Read in the csv data file for sample submission (for reference)
 
 
 ### PREPARE/CLEAN TRAINING SET ###
-df.99.scores <- clean_data(train, 0.99, filter_symbol = F, stop_words = F, 
+df.99.scored <- clean_data(train, 0.99, filter_symbol = F, stop_words = F, 
                             extra = F, ngram = F)
-corpus <- colnames(df.99.scores)[!(colnames(df.99.scores) %in% c("num_at", "num_exlaim",
+corpus <- colnames(df.99.scored)[!(colnames(df.99.scored) %in% c("num_at", "num_exlaim",
                                                                "num_hash", "num_question", "odd_char"))]
 df.99.scored["SCORE"] <- train[,1]
 
 
 ###### PREPARE TESTING SET ###### 
-df.test.preds2 <- clean_data(test, 0.99, filter_symbol = F, stop_words = F, 
+df.test.preds <- clean_data(test, 0.99, filter_symbol = F, stop_words = F, 
                             extra = F, dict = corpus)
 
 ###############################################################
@@ -43,9 +42,9 @@ lm.df.99.2 <- lm(SCORE~cant+dont+excit+googl+insur+less+need+pedal+safer+save+sa
                  data=df.99.scored)
 summary(lm.df.99.2) #Recheck all variables and their new p-values
 
-#Remove all variables with a p-value less than .05
-#Try to run the model on the original test set -- if any words are not in the test set, also remove those
-#NOTE -- this was done BEFORE creating a new test data frame with columns for each term in the training set
+# Remove all variables with a p-value less than .05
+# Try to run the model on the original test set -- if any words are not in the test set, also remove those
+# NOTE -- this was done BEFORE creating a new test data frame with columns for each term in the training set
 lm.df.99.3 <- lm(SCORE~cant+dont+excit+googl+insur+less+need+safer+
                    soon+thing+wait+want+warn+wrong, 
                  data=df.99.scored)   
@@ -57,7 +56,7 @@ summary(lm.df.99.3) #All variables still have p-value >= 0.05
 
 ### BASIC LM PREDICTION... ###
 
-#Use predict function to predict sentiment on test set using final basic linear model
+# Use predict function to predict sentiment on test set using final basic linear model
 mypreds <- data.frame(predict(lm.df.99.3, newdata = df.test.preds))
 
 sentiment <- round(mypreds[,1],digits=0) #Round all values to closest integer
@@ -67,18 +66,18 @@ lm.preds <- as.data.frame(sentiment) #Place into a data frame
 lm.preds[lm.preds > 5,] = 5
 lm.preds[lm.preds < 1,] = 1
 
-#Add in ID numbers
+# Add in ID numbers
 lm.preds["id"] = test[,1]
 lm.preds <- lm.preds[c(2,1)] #Switch columns, so they are in the correct order
 
-write.table(lm.preds, file = "Predictions/lm_car_tweets_eih.csv", row.names=F, sep=",") #Write out to a csv
-#KAGGLE SCORE = 0.68302
+# write.table(lm.preds, file = "Predictions/lm_car_tweets_eih.csv", row.names=F, sep=",") #Write out to a csv
+# KAGGLE SCORE = 0.68302
 
 #######################################################
 ### CREATE OPTIMAL LINEAR MODEL USING STEP FUNCTION ###
 #######################################################
 
-#Use step function to find optimal set of predictors
+# Use step function to find optimal set of predictors
 
 # step(lm.df.99, direction = "both") #THIS TAKES A WHILE TO RUN... RESULTS ARE SHOWN BELOW
 
@@ -123,14 +122,14 @@ summary(lm.optimal)
 #wrong        -0.7016     0.3152  -2.226 0.026237 *  
 #yes           0.6362     0.3771   1.687 0.091866 .  
 
-#Residual standard error: 0.7231 on 950 degrees of freedom
-#Multiple R-squared:  0.1799,	Adjusted R-squared:  0.154 
-#F-statistic: 6.946 on 30 and 950 DF,  p-value: < 2.2e-16
+# Residual standard error: 0.7231 on 950 degrees of freedom
+# Multiple R-squared:  0.1799,	Adjusted R-squared:  0.154 
+# F-statistic: 6.946 on 30 and 950 DF,  p-value: < 2.2e-16
 
 
 ### OPTIMAL LM PREDICTION... ###
 
-#Use predict function to make predictions on test set sentiment using optimal linear model
+# Use predict function to make predictions on test set sentiment using optimal linear model
 mypreds.optimal <- data.frame(predict(lm.optimal, newdata = df.test.preds))
 
 sentiment <- round(mypreds.optimal[,1],digits=0) #Round all values to closest integer
@@ -144,23 +143,20 @@ lm.preds.optimal[lm.preds.optimal < 1,] = 1
 lm.preds.optimal["id"] = test[,1]
 lm.preds.optimal <- lm.preds.optimal[c(2,1)] #Switch columns, so they are in the correct order
 
-write.table(lm.preds.optimal, file = "Predictions/lm_optimal_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
-#KAGGLE SCORE = 0.66 (strangely, not better)
+# write.table(lm.preds.optimal, file = "Predictions/lm_optimal_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
+# KAGGLE SCORE = 0.66 (strangely, not better)
 
 
 ### USE LDA TO CREATE A NEW LINEAR MODEL ###
+# This did not work well
 
 df.99.scored.2 <- df.99.scored[, !(colnames(df.99.scored) %in% c("univers"))]
 z <- lda(SCORE ~ ., df.99.scored.2, CV = T) #Assumes frequencies from training set
 sum(z$class == train$sentiment)/length(z$class)
+#  0.5545362
 
-### LDA PREDICTION ... ###
+# Did not create predictions because the model seemed bad
 
-lm.preds.LDA["sentiment"] <- (predict(z, newdata=df.test.preds)$class)
-
-#Add in ID numbers
-lm.preds.LDA["id"] = test[,1]
-lm.preds.LDA <- lm.preds.LDA[c(2,1)] #Switch columns, so they are in the correct order
 
 ##########################################################
 ### CREATE BASIC LINEAR MODEL WITH ADDITIONAL FEATURES ###
@@ -168,7 +164,7 @@ lm.preds.LDA <- lm.preds.LDA[c(2,1)] #Switch columns, so they are in the correct
 
 ### PREPARE/CLEAN TRAINING SET ###
 df.99.scored2 <- clean_data(train, 0.99, filter_symbol = F, stop_words = F, 
-                           extra = T, weighting = "ntn", ngram = F)
+                           extra = T, ngram = F)
 corpus2 <- colnames(df.99.scored2)[!(colnames(df.99.scored2) %in% c("num_at", "num_exlaim",
                                                                  "num_hash", "num_question", "odd_char"))]
 df.99.scored2["SCORE"] <- train[,1]
@@ -176,7 +172,7 @@ df.99.scored2["SCORE"] <- train[,1]
 
 ###### PREPARE TESTING SET ###### 
 df.test.preds2 <- clean_data(test, 0.99, filter_symbol = F, stop_words = F, 
-                            extra = T, dict = corpus2, weighting = "ntn")
+                            extra = T, dict = corpus2)
 
 
 ### MAKE THE MODEL ###
@@ -186,7 +182,7 @@ summary(lm.df.99.2) #Look to see what variables have a significance greater than
 ### KEEP ONLY PREDICTIVE VARIABLES
 lm.df.99.22 <- lm(SCORE ~ dont + excit + fbi + googl + insur + just + 
                     less + need + pedal + save + saw + thing + think +
-                    truck + wait + want + warn + will + odd_char + 
+                    truck + wait + want + warn + will + 
                     num_exlaim + num_question, df.99.scored2)
 summary(lm.df.99.22)
 
@@ -211,8 +207,8 @@ lm.preds.extra[lm.preds.extra < 1,] = 1
 lm.preds.extra["id"] = test[,1]
 lm.preds.extra <- lm.preds.extra[c(2,1)] #Switch columns, so they are in the correct order
 
-write.table(lm.preds.extra, file = "Predictions/lm_extra_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
-#KAGGLE SCORE = ???
+# write.table(lm.preds.extra, file = "Predictions/lm_extra_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
+# Never submitted to Kaggle
 
 ##############################################
 ### CREATE BASIC LINEAR MODEL WITH BIGRAMS ###
@@ -282,6 +278,6 @@ lm.preds.bi[lm.preds.bi < 1,] = 1
 lm.preds.bi["id"] = test[,1]
 lm.preds.bi <- lm.preds.bi[c(2,1)] #Switch columns, so they are in the correct order
 
-write.table(lm.preds.bi, file = "Predictions/lm_bi_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
+# write.table(lm.preds.bi, file = "Predictions/lm_bi_car_tweets.csv", row.names=F, sep=",") #Write out to a csv
 
-#KAGGLE SCORE (final score including the private test file accuracy) = 0.64488
+# KAGGLE SCORE (final score including the private test file accuracy) = 0.64488

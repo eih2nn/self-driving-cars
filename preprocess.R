@@ -11,14 +11,12 @@ library(readr)
 library(stringr)
 library(tm)
 library(zoo) # Used for the coredata function
-library(tau) # Used to tokenize into n-grams
 library(RWeka)
 
 # Clean the data based on the Professor Gerbers preprocessing script
 # @param train: unprocessed data directly from csv file
 # @param sparcity: sparcity threshold for the weighted matrix
-# @param filter_symbol: boolean specifying whether to remove '@' symbols and
-#   other oddly encoded symbols
+# @param filter_symbol: boolean specifying whether to remove words starting with '@' symbols 
 # @param stop_words: boolean specifying whether to remove stop words or not
 # @param extra: boolean specifying whether to extract additional features from 
 #   the data
@@ -29,7 +27,6 @@ clean_data <- function(train, sparcity = 0.99, filter_symbol = F, stop_words = F
   train2 <- train
   if(filter_symbol){
     train2$text <- remove_at(train2$text)
-    train2$text <- remove_symbols(train2)
   }
   
   ##### Constructing TF-IDF Matrices #####
@@ -47,6 +44,7 @@ clean_data <- function(train, sparcity = 0.99, filter_symbol = F, stop_words = F
   }
   tweets.clean = tm_map(tweets.clean, stemDocument)                       # stem all words
   
+  # Based on ngram parameter, tokenize into ngrams
   if(ngram){
     # Tokenizer for ngrams
     BigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 1, max = n))
@@ -117,11 +115,6 @@ remove_at <- function(x){
     x <- lapply(x, function(y){gsub("@\\w+ *", "", y)})
 }
 
-# Remove certain oddly encoded symbols
-# remove_symbols <- function(x){
-#   return(str_replace_all(x$text, "[Ì¢???âÂåüèÏ???Û¡ÂÃ???Ò]", ""))
-# }
-
 # Return the number of words in a string
 num_words <- function(x){
   return(length(unlist(str_split(x, " "))))
@@ -152,7 +145,4 @@ expand_data <- function(x, distribution){
   }
   return(result)
 }
-
-# Token data into n-gram tokens, comes from https://stackoverflow.com/questions/8898521/finding-2-3-word-phrases-using-r-tm-package
-tokenize_ngrams <- function(x, n=1) return(rownames(as.data.frame(unclass(textcnt(x,method="string",n=n)))))
 

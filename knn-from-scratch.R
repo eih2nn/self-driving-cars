@@ -38,15 +38,19 @@ knn.classify <- function(test.case, train, k, cosine = F){
   return(unique_classes[which.max(tabulate(match(train$cl, unique_classes)))])
 }
 
+# Function that returns the Euclidean distance between two points
 distance <- function(x, test.case){
   ret <- sqrt(sum((x - test.case)^2))
   return(ret)
 }
 
+# Function that returns the cosine distance between two points
 distance_cosine <- function(x, test.case){
   ret <- sum(x * test.case)/(sqrt(sum(x^2))*sqrt(sum(test.case^2)))
   return(ret)
 }
+
+# Wrapper function to use LOOCV on the given data set
 knn.loocv <- function(train, class, k = 1, cosine = F){
   accuracy <- vector(mode="numeric", length = nrow(train))
   train <- cbind(train, class)
@@ -62,6 +66,8 @@ knn.loocv <- function(train, class, k = 1, cosine = F){
   return(mean(accuracy))
 }
 
+# Given a size and a number of folds, returns the most even sizes
+# for each partition
 partition_size <- function(size, folds){
   mod <- size %% folds  
   ret <- rep(floor(size / folds), folds - mod)
@@ -69,6 +75,7 @@ partition_size <- function(size, folds){
   return(ret)
 }
 
+# Wrapper function to perform Kfold CV on the given data
 knn.kfolds <- function(train, class, k = 1, folds = 5, cosine = F){
   partition_sizes <- partition_size(nrow(train), folds)
   kfolds <- list()

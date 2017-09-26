@@ -8,7 +8,7 @@ library(readr)
 source("knn-from-scratch.R")
 source("preprocess.R")
 library(class) # ONLY USED FOR EXPLORING DIFFERENT KNN MODELS (because it is so much faster), 
-# PREDICTIONS USE OUR MODEL AS SPECIFIED BY THE ASSIGNMENT
+# ALL PREDICTIONS USE OUR MODEL AS SPECIFIED BY THE ASSIGNMENT
 library(dplyr)
 
 ##### Read in the data
@@ -19,30 +19,47 @@ test <- read_csv("test.csv")
 train2 <- train %>% 
   group_by(sentiment) %>% 
   summarize(n = n())
+train2
 
-# Run the KNN
+##### Run the KNN
+
+# Set seed for reproducibility 
+
+############
+### NOTE ###
+############
+
+# The set.seed does not appear to affect the randomness that comes with k-fold
+# CV, so the results of running this code may differ slightly from the values in 
+# the comments.
 
 set.seed(3)
-# Use LOOCV to find range of good k-values
+
+# Use LOOCV (our implementation) to find range of good k-values
 preds <- clean_data(train, 0.99, F, F, F)
 k <- seq(1, as.integer(sqrt(nrow(preds))) + 4, by = 2)
 reses <- vector(mode = "numeric", length = length(k))
-for(i in 1:length(k)){
-  reses[i] <- knn.loocv(preds, train$sentiment, k = k[i])
-  print(i)
-}
-reses 
+
+# THIS CODE TAKES A LONG TIME TO RUN
+# for(i in 1:length(k)){
+#   reses[i] <- knn.loocv(preds, train$sentiment, k = k[i])
+#   print(i)
+# }
+# reses 
+
 # Gives a range of k of 11-33
 
 # Using range of k's, run kfold to narrow even further
 preds <- clean_data(train, 0.99, F, F, F)
 k <- seq(11, 33, by = 2)
 reses <- vector(mode = "numeric", length = length(k))
-for(i in 1:length(k)){
-  reses[i] <- knn.kfolds(preds, as.factor(train$sentiment), k = k[i])
-  print(i)
-}
-reses 
+
+# THIS CODE TAKES A LONG TIME TO RUN
+# for(i in 1:length(k)){
+#   reses[i] <- knn.kfolds(preds, as.factor(train$sentiment), k = k[i])
+#   print(i)
+# }
+# reses 
 # Gives best k-value of ~25 so we will just use 25
 
 # Optimize the sparcity using optimal k
@@ -84,13 +101,15 @@ sum(p == train$sentiment)/length(train$sentiment)
 # Play around with different distributions
 train2 <- expand_data(train, c(3, 1, 1, 1, 2))
 preds <- clean_data(train2, 0.995, F, F, F)
-p <- class::knn.cv(preds, as.factor(train2$sentiment), k = 19)
+p <- knn.cv(preds, as.factor(train2$sentiment), k = 19)
 sum(p == train2$sentiment)/length(train2$sentiment)
 # Many different values for the distribution were tried, 
 # this only seemed to make things worse.
 
 # Play around with ngram analysis
 # Change sparcity to include more of the bigrams
+
+# This uses our implementation of kfolds
 preds <- clean_data(train, 0.99, F, F, T, ngram = T)
 p <- knn.kfolds(preds, as.factor(train$sentiment), k = 19, cosine = T)
 sum(p == train$sentiment)/length(train$sentiment)
@@ -117,6 +136,6 @@ predicts <- knn.R(train = train.data, test = test.data, cl = train$sentiment, k 
 
 results <- cbind("id" = test$id, "sentiment" = predicts)
 
-write_csv(data.frame(results), "Predictions/predictions_knn_final_ben.csv")
+# write_csv(data.frame(results), "Predictions/predictions_knn_final_ben.csv")
 
 # The final accuracy (including the private test set) score of the K-NN model is 0.66530
