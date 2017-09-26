@@ -1,8 +1,7 @@
 # Twitter Sentiment Analysis
 Kaggle In Class Competition re: Twitter Sentiment Analysis of Self-Driving Cars
+
 Team: Competition 3-1s
-
-
 
 ### Important Files
 
